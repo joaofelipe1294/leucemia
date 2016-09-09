@@ -12,7 +12,7 @@ class BaseLoader(object):
 		paths = os.listdir(base_path)
 		paths.sort()
 		for path in paths:
-			image_id = path[0][2:5]
+			image_id = path[2:5]
 			image_path = self.base_path + '/' + path
 			label = paths[0][6:7]
 			cell = Cell(image_id = image_id , image_path = image_path , label = label)
