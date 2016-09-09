@@ -1,6 +1,4 @@
 import os
-import cv2
-import numpy as np
 from cell import Cell
 
 class BaseLoader(object):
@@ -19,8 +17,3 @@ class BaseLoader(object):
 			label = paths[0][6:7]
 			cell = Cell(image_id = image_id , image_path = image_path , label = label)
 			self.cells.append(cell)
-
-
-base_loader = BaseLoader()
-base_loader.load('ALL_IDB2/img')
-print(base_loader.cells)
