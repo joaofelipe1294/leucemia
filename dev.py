@@ -19,13 +19,16 @@ def flood(image):
 	return floodfill_image
 
 
-def show_histogram(image_path):
-	img = cv2.imread(image_path , cv2.IMREAD_COLOR)
+def display_rgb_histogram(rgb_image):
 	color = ('b','g','r')
 	for i,col in enumerate(color):
-		histr = cv2.calcHist([img],[i],None,[256],[0,256])
+		histr = cv2.calcHist([rgb_image],[i],None,[256],[0,256])
 		plt.plot(histr,color = col)
 		plt.xlim([0,256])
+	plt.show()
+
+def display_gray_scale_histogram(grayscale_image):
+	plt.hist(grayscale_image.ravel(),256,[0,256])
 	plt.show()
 	
 
@@ -77,20 +80,21 @@ base.load('teste')
 for image in base.images:
 	rgb_image = cv2.imread( image.path)
 	saturation = hsi_chanels(rgb_image)
-	cv2.imshow('saturation' , saturation)
-	cv2.waitKey(0)
+	display_gray_scale_histogram(saturation)
+	#cv2.imshow('saturation' , saturation)
+	#cv2.waitKey(0)
 	#rgb_chanels(rgb_image)
 	#show_histogram(image.path)
 	#cv2.imshow('image' ,cv2.imread( image.path))
 	#cv2.waitKey(250)
-	original_image = cv2.imread( image.path, 0)
-	equalized_image = cv2.equalizeHist(original_image)
-	flooded_image = flood(original_image)
-	laplacian = cv2.Laplacian(flooded_image , cv2.CV_8U)
-	edges = cv2.Canny(flooded_image,10,200)
-	erosion = cv2.erode(cv2.bitwise_not(edges),np.ones((2,2) , np.uint),iterations = 1)
-	dilation = cv2.dilate(flooded_image,np.ones((3,3) , np.uint),iterations = 1)
-	closing = cv2.morphologyEx(flooded_image, cv2.MORPH_CLOSE, np.ones((3,3) , np.uint8))
+	#original_image = cv2.imread( image.path, 0)
+	#equalized_image = cv2.equalizeHist(original_image)
+	#flooded_image = flood(original_image)
+	#laplacian = cv2.Laplacian(flooded_image , cv2.CV_8U)
+	#edges = cv2.Canny(flooded_image,10,200)
+	#erosion = cv2.erode(cv2.bitwise_not(edges),np.ones((2,2) , np.uint),iterations = 1)
+	#dilation = cv2.dilate(flooded_image,np.ones((3,3) , np.uint),iterations = 1)
+	#closing = cv2.morphologyEx(flooded_image, cv2.MORPH_CLOSE, np.ones((3,3) , np.uint8))
 	#show = np.concatenate((original_image , equalized_image & erosion ,flooded_image & erosion , dilation , closing ) , axis=1)
 	#cv2.imshow('resault' , show)
 	#cv2.waitKey(0)"""
