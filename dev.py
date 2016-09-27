@@ -2,20 +2,24 @@ from base_loader import BaseLoader
 import cv2
 import numpy as np
 from matplotlib import pyplot as plt
+import math
 
-
-def flood(image):
+def flood(image , value=0 , single_seed = None):
 	floodfill_image = image.copy()
 	h, w = floodfill_image.shape[:2]                                         
 	mask = np.zeros((h + 2 , w + 2) , np.uint8)                              
-	seeds = []
-	for x in xrange(0 , w , 5):
-		seeds.append(tuple([0 , x]))
-		seeds.append(tuple([h - 5 , x]))
-		seeds.append(tuple([x , 0]))
-		seeds.append(tuple([x , w - 5]))
-	for seed in seeds:
-		cv2.floodFill(floodfill_image , mask , seed , 0 , loDiff = 2 , upDiff = 2)
+	if single_seed == None:
+		seeds = []
+		for x in xrange(0 , w , 5):
+			seeds.append(tuple([0 , x]))
+			seeds.append(tuple([h - 5 , x]))
+			seeds.append(tuple([x , 0]))
+			seeds.append(tuple([x , w - 5]))
+		for seed in seeds:
+			cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
+	else:
+		seed = single_seed
+		cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
 	return floodfill_image
 
 
@@ -71,12 +75,6 @@ base = BaseLoader()
 base.load('teste')
 #base.load('ALL_IDB2/img')
 
-#rgb_image = cv2.imread(base.images[0].path , cv2.IMREAD_COLOR)
-#hsi_chanels(rgb_image)
-
-#rgb_image = cv2.imread(base.images[0].path)
-#rgb_chanels(rgb_image)
-
 for image in base.images:
 	print(image.path)
 	rgb_image = cv2.imread(image.path)
@@ -86,29 +84,57 @@ for image in base.images:
    	otsu_image = cv2.threshold(blur_image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
 	flooded_image = flood(otsu_image)
 	opening = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))
-	img, contours, hierarchy = cv2.findContours(opening.copy(),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+	img , contours, hierarchy = cv2.findContours(opening.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	cv2.drawContours(img, contours, -1,255, 1)
+	image_center_point = tuple([int(opening.shape[0] / 2) , int(opening.shape[1]) / 2])
 	if len(contours) > 1:
-		bigger_index = 0
-		bigger_area = 0
+		lowest_index = 0
+		lowest_distance = None
 		for contour_index in range(0 , len(contours)):
-			area = cv2.contourArea(contours[contour_index])
-			if area > bigger_area:
-				bigger_area = area
-				bigger_index = contour_index
-		(x,y),cell_radius = cv2.minEnclosingCircle(contours[bigger_index])
-		cell_center = (int(x),int(y))
+			(x,y),cell_radius = cv2.minEnclosingCircle(contours[contour_index])
+			distance_to_center = math.sqrt(math.pow((x - image_center_point[1]) , 2) + math.pow(y - image_center_point[1] , 2))
+			if lowest_distance == None or distance_to_center < lowest_distance:
+				lowest_index = contour_index
+				lowest_distance = distance_to_center
+		(x,y),cell_radius = cv2.minEnclosingCircle(contours[lowest_index])
 		cell_radius = int(cell_radius)
-		contours.remove(contours[bigger_index])
-		for contour in contours:
-			(x,y),object_radius = cv2.minEnclosingCircle(contour)
-			object_center = (int(x),int(y))
-			object_radius = int(object_radius)
-			if (object_center[0] > cell_center[0] + cell_radius or object_center[0] < cell_center[0] - cell_radius) and (object_center[1] > cell_center[1] + cell_radius or object_center[1] < cell_center[1] - cell_radius):
-				cv2.circle(opening,object_center,object_radius + 10,0,-1)
+		contours.pop(lowest_index)
+	else:
+		(x,y),cell_radius = cv2.minEnclosingCircle(contours[0])
+	cell_center = (int(x),int(y))
+	copy = np.zeros((opening.shape) , np.uint8)
+	mask = flood(img , 255 , single_seed = cell_center)
+	mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3,3) , np.uint8))
 
+		#print(len(contours))
+		#for contour in contours:
+			#cv2.drawContours(edges, contours, -1, (0,255,0), 3)
+			#(x,y),object_radius = cv2.minEnclosingCircle(contour)
+			#object_center = (int(x),int(y))
+			#object_radius = int(object_radius)
+			#print("========================================")
+			#print("CELL CENTER : " + str(cell_center))
+			#print("CELL RADIUS : " + str(cell_radius))
+			#print("OBJECT CENTER : " + str(object_center))
+			#print("OBJECT RADIUS : " + str(object_radius))
+			#print(object_center[0] > cell_center[0] + cell_radius) 
+			#print(object_center[0] < cell_center[0] - cell_radius)
+			#print(object_center[1] > cell_center[1] + cell_radius or object_center[1] < cell_center[1] - cell_radius)
+			#print("========================================")
+			#opening.itemset(cell_center , 0)
+			#if (object_center[0] > cell_center[0] + cell_radius or object_center[0] < cell_center[0] - cell_radius) and (object_center[1] > cell_center[1] + cell_radius or object_center[1] < cell_center[1] - cell_radius):
+			#	cv2.circle(opening,object_center,object_radius + 5,0,-1)
+		#(x,y),radius = cv2.minEnclosingCircle(contours[lowest_index])
+		#center = (int(x),int(y))
+		#radius = int(radius)
+		#cv2.circle(rgb_image,cell_center,cell_radius,(0,255,0),2)
+		#cv2.imshow('rgb' , rgb_image)
+		#cv2.waitKey(0)"""
 
-	cv2.imshow('original' , rgb_image )
-	cv2.imshow('closed' , opening )
+	cv2.imshow('opening' , opening)
+	cv2.imshow('mask' , mask)
+	#cv2.imshow('original' , rgb_image )
+	cv2.imshow('img' , img)
 	cv2.waitKey(0)
 	#rgb_chanels(rgb_image)
 	#show_histogram(image.path)
