@@ -15,7 +15,7 @@ def flood(image):
 		seeds.append(tuple([x , 0]))
 		seeds.append(tuple([x , w - 5]))
 	for seed in seeds:
-		cv2.floodFill(floodfill_image , mask , seed , 255 , loDiff = 2 , upDiff = 2)
+		cv2.floodFill(floodfill_image , mask , seed , 0 , loDiff = 2 , upDiff = 2)
 	return floodfill_image
 
 
@@ -78,11 +78,38 @@ base.load('teste')
 #rgb_chanels(rgb_image)
 
 for image in base.images:
-	rgb_image = cv2.imread( image.path)
+	print(image.path)
+	rgb_image = cv2.imread(image.path)
+	grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
 	saturation = hsi_chanels(rgb_image)
-	display_gray_scale_histogram(saturation)
-	#cv2.imshow('saturation' , saturation)
-	#cv2.waitKey(0)
+	blur_image = cv2.GaussianBlur(saturation,(5,5),0)
+   	otsu_image = cv2.threshold(blur_image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+	flooded_image = flood(otsu_image)
+	opening = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))
+	img, contours, hierarchy = cv2.findContours(opening.copy(),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+	if len(contours) > 1:
+		bigger_index = 0
+		bigger_area = 0
+		for contour_index in range(0 , len(contours)):
+			area = cv2.contourArea(contours[contour_index])
+			if area > bigger_area:
+				bigger_area = area
+				bigger_index = contour_index
+		(x,y),cell_radius = cv2.minEnclosingCircle(contours[bigger_index])
+		cell_center = (int(x),int(y))
+		cell_radius = int(cell_radius)
+		contours.remove(contours[bigger_index])
+		for contour in contours:
+			(x,y),object_radius = cv2.minEnclosingCircle(contour)
+			object_center = (int(x),int(y))
+			object_radius = int(object_radius)
+			if (object_center[0] > cell_center[0] + cell_radius or object_center[0] < cell_center[0] - cell_radius) and (object_center[1] > cell_center[1] + cell_radius or object_center[1] < cell_center[1] - cell_radius):
+				cv2.circle(opening,object_center,object_radius + 10,0,-1)
+
+
+	cv2.imshow('original' , rgb_image )
+	cv2.imshow('closed' , opening )
+	cv2.waitKey(0)
 	#rgb_chanels(rgb_image)
 	#show_histogram(image.path)
 	#cv2.imshow('image' ,cv2.imread( image.path))
@@ -98,17 +125,6 @@ for image in base.images:
 	#show = np.concatenate((original_image , equalized_image & erosion ,flooded_image & erosion , dilation , closing ) , axis=1)
 	#cv2.imshow('resault' , show)
 	#cv2.waitKey(0)"""
-
-
-
-#img = cv2.imread('home.jpg')
-#color = ('b','g','r')
-#for i,col in enumerate(color):
-# histr = cv2.calcHist([img],[i],None,[256],[0,256])
-#plt.plot(histr,color = col)
-#plt.xlim([0,256])
-#plt.show()
-
 
 
 """ mostra todas as imagens pre processadas ""
