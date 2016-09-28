@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import math
 
+
 def flood(image , value=0 , single_seed = None):
 	floodfill_image = image.copy()
 	h, w = floodfill_image.shape[:2]                                         
@@ -20,6 +21,13 @@ def flood(image , value=0 , single_seed = None):
 	else:
 		seed = single_seed
 		cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
+	white = 0
+	for x in xrange(0,image.shape[0]):
+		for y in xrange(0,image.shape[1]):
+			if floodfill_image.item(x,y) == 255:
+				white += 1
+	if white > ((image.shape[0] * image.shape[1] * 80) / 100):
+		floodfill_image = cv2.bitwise_not(floodfill_image)
 	return floodfill_image
 
 
@@ -30,6 +38,7 @@ def display_rgb_histogram(rgb_image):
 		plt.plot(histr,color = col)
 		plt.xlim([0,256])
 	plt.show()
+
 
 def display_gray_scale_histogram(grayscale_image):
 	plt.hist(grayscale_image.ravel(),256,[0,256])
@@ -80,6 +89,7 @@ def get_number_of_objects(image):
 	img , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	return len(contours)
 
+
 def find_interest_cell(image):
 	image_center_point = tuple([int(opening.shape[0] / 2) , int(opening.shape[1]) / 2])
 	img , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -95,20 +105,50 @@ def find_interest_cell(image):
 	cell_radius = int(cell_radius)
 	contours.pop(lowest_index)
 	cell_center = (int(x),int(y))
-	"""mask = flood(img , 255 , single_seed = cell_center)
-	for contour in contours:
-		(x,y),object_radius = cv2.minEnclosingCircle(contour)
-		object_radius = int(object_radius)
-		object_center = (int(x),int(y))
-		distance_to_cell_center = math.sqrt(math.pow((x - cell_center[1]) , 2) + math.pow(y - cell_center[1] , 2))
-		if distance_to_cell_center < cell_radius:
-			mask = opening.copy()
-			break
-			#mask = flood(mask , 255 , single_seed = object_center)						
-	mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3,3) , np.uint8))
-	cv2.circle(grayscale_image , cell_center , cell_radius , 255 , 1):"""
 	return cell_center , cell_radius , contours
 
+
+def verifies_intersection(cell_radius , cell_center , object_radius , object_center , image_height , image_width):
+	plan_1 = np.zeros((image_height , image_width) , np.uint8)
+	cv2.circle(plan_1 , cell_center , cell_radius , 100 , 1)
+	plan_2 = np.zeros((image_height , image_width) , np.uint8)
+	cv2.circle(plan_2 , object_center , object_radius , 100 , 1)
+	plan = cv2.add(plan_1 , plan_2)
+	counter = 0
+	for x in xrange(0,image_height):
+		for y in xrange(0,image_width):
+			if plan.item(x , y) > 100:
+				counter += 1	
+	if counter == 2:
+		return True
+	else:
+		return False
+	
+
+def flood_object(image , contour_image , object_center, object_radius , value=255):
+	flag = False
+	x_white = 0
+	y_white = 0
+	for index in xrange(0,object_radius):	
+		x_coordenate = tuple([object_center[0] + index , object_center[0]])
+		y_coordenate = tuple([object_center[0] , object_center[1] + index])
+		flooded_image_X = flood(contour_image , value , x_coordenate)
+		flooded_image_Y = flood(contour_image , value , y_coordenate)
+		for x in xrange(0,image.shape[0]):
+			for y in xrange(0,image.shape[1]):
+				if flooded_image_X.item(x,y) == 255:
+					x_white += 1
+				if flooded_image_Y.item(x,y) == 255:
+					y_white += 1
+		if x_white < ((image.shape[0] * image.shape[1] * 80) / 100):
+			sum_image = cv2.add(flooded_image_X , image)
+		elif y_white < ((image.shape[0] * image.shape[1] * 80) / 100):
+			sum_image = cv2.add(flooded_image_Y , image)
+		open_image = cv2.morphologyEx(sum_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))	
+		#show = np.concatenate((image , contour_image , sum_image , open_image , flooded_image_X , flooded_image_Y) , axis=1)
+		#cv2.imshow('resault' , show)
+		#cv2.waitKey(0)
+		return open_image
 
 def define_mask(image , threshold_image , contours , cell_center , cell_radius):
 	flooded_image = flood(image.copy() , 255 , single_seed = cell_center)
@@ -123,28 +163,9 @@ def define_mask(image , threshold_image , contours , cell_center , cell_radius):
 		cv2.circle(grayscale_image , object_center , object_radius , 155 , 1)
 		if (object_center[0] + object_radius > cell_center[0] + cell_radius and object_center[0] - object_radius < cell_center[0] - cell_radius) and (object_center[1] + object_radius > cell_center[1] + cell_radius and object_center[1] - object_radius < cell_center[1] + cell_radius):
 			open_image = cv2.add(threshold_image , open_image)
-			#print("OBJETO ENGLOBA A CELULA !!!")
-			#cv2.imshow('mask' , threshold_image)
-			#cv2.waitKey(0)
-			#open_image += image
-			#print("INTERNO !!!")
-
-
-
-
-		#grayscale_image.itemset(object_center , 255)
-		#if cell_center[0] + cell_radius < object_center[0] + object_radius and cell_center[0] - cell_radius > object_center[0] - object_radius and cell_center[1] + cell_radius < object_center[1] + object_radius and cell_center[1] - cell_radius > object_center[1] - object_radius:
-		#	return open_image.copy()
-		#print("DISTANCIA DO CENTRO : " + str(distance_to_cell_center))
-		#print("RAIO DA CELULA : " + str(cell_radius))
-		#if distance_to_cell_center > cell_radius:
-		#	mask = opening.copy()
-		#	mask = flood(mask , 0 , single_seed = object_center)
-		#	pass
-		#else:
-		#	pass
-		#	mask = flood(mask , 0 , single_seed = object_center)
-
+		intercepts = verifies_intersection(cell_radius , cell_center , object_radius , object_center , image.shape[0] , image.shape[1])
+		if intercepts:
+			open_image = flood_object(open_image.copy() , image , object_center , object_radius)
 	return open_image
 	
 
@@ -182,7 +203,7 @@ for image in base.images:
 	#cv2.imshow('mask' , mask)
 	#cv2.imshow('contours_image' , contours_image)
 	#cv2.waitKey(0)
-	show = np.concatenate((grayscale_image , opening , contours_image , mask) , axis=1)
+	show = np.concatenate((grayscale_image , flooded_image , opening , contours_image , mask) , axis=1)
 	cv2.imshow('resault' , show)
 	cv2.waitKey(0)
 
