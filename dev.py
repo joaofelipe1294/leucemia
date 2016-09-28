@@ -110,25 +110,45 @@ def find_interest_cell(image):
 	return cell_center , cell_radius , contours
 
 
-def define_mask(image , contours , cell_center , cell_radius):
-	mask = flood(image , 255 , single_seed = cell_center)
-	contours_valids = []
+def define_mask(image , threshold_image , contours , cell_center , cell_radius):
+	flooded_image = flood(image.copy() , 255 , single_seed = cell_center)
+	open_image = cv2.morphologyEx(flooded_image.copy(), cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))
+	cv2.circle(grayscale_image , cell_center , cell_radius , 255 , 1)
+	
 	for contour in contours:
 		(x,y),object_radius = cv2.minEnclosingCircle(contour)
 		object_radius = int(object_radius)
 		object_center = (int(x),int(y))
 		distance_to_cell_center = math.sqrt(math.pow((x - cell_center[1]) , 2) + math.pow(y - cell_center[1] , 2))
-		cv2.circle(grayscale_image , cell_center , cell_radius , 255 , 1)
-		print("DISTANCIA DO CENTRO : " + str(distance_to_cell_center))
-		print("RAIO DA CELULA : " + str(cell_radius))
-		if distance_to_cell_center > cell_radius:
-			#mask = opening.copy()
-			mask = flood(mask , 0 , single_seed = object_center)
-		else:
-			mask = flood(mask , 255 , single_seed = object_center)						
-	mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3,3) , np.uint8))
-	cv2.circle(grayscale_image , cell_center , cell_radius , 255 , 1)
-	return mask
+		cv2.circle(grayscale_image , object_center , object_radius , 155 , 1)
+		if (object_center[0] + object_radius > cell_center[0] + cell_radius and object_center[0] - object_radius < cell_center[0] - cell_radius) and (object_center[1] + object_radius > cell_center[1] + cell_radius and object_center[1] - object_radius < cell_center[1] + cell_radius):
+			open_image = cv2.add(threshold_image , open_image)
+			#print("OBJETO ENGLOBA A CELULA !!!")
+			#cv2.imshow('mask' , threshold_image)
+			#cv2.waitKey(0)
+			#open_image += image
+			#print("INTERNO !!!")
+
+
+
+
+		#grayscale_image.itemset(object_center , 255)
+		#if cell_center[0] + cell_radius < object_center[0] + object_radius and cell_center[0] - cell_radius > object_center[0] - object_radius and cell_center[1] + cell_radius < object_center[1] + object_radius and cell_center[1] - cell_radius > object_center[1] - object_radius:
+		#	return open_image.copy()
+		#print("DISTANCIA DO CENTRO : " + str(distance_to_cell_center))
+		#print("RAIO DA CELULA : " + str(cell_radius))
+		#if distance_to_cell_center > cell_radius:
+		#	mask = opening.copy()
+		#	mask = flood(mask , 0 , single_seed = object_center)
+		#	pass
+		#else:
+		#	pass
+		#	mask = flood(mask , 0 , single_seed = object_center)
+
+	return open_image
+	
+
+	
 
 
 
@@ -138,6 +158,7 @@ base.load('teste')
 #base.load('ALL_IDB2/img')
 
 for image in base.images:
+	print("==============================================")
 	print(image.path)
 	rgb_image = cv2.imread(image.path)
 	grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
@@ -145,23 +166,23 @@ for image in base.images:
    	otsu_image = otsu_threshold(saturation)
 	flooded_image = flood(otsu_image)
 	opening = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))
-	img , contours, hierarchy = cv2.findContours(opening.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	cv2.drawContours(img, contours, -1,255, 1)
+	contours_image , contours, hierarchy = cv2.findContours(opening.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	cv2.drawContours(contours_image, contours, -1,255, 1)
 	image_center_point = tuple([int(opening.shape[0] / 2) , int(opening.shape[1]) / 2])
 	if get_number_of_objects(opening) > 1:
 		cell_center , cell_radius , contours = find_interest_cell(opening)
 		if cell_radius < 10:
 			mask = opening.copy()
 		else:
-			mask = define_mask(img , contours , cell_center , cell_radius)
-		
+			mask = define_mask(contours_image , opening , contours , cell_center , cell_radius)
 	else:
 		mask = opening.copy()
+	print("==============================================")
 	#cv2.imshow('opening' , opening)
 	#cv2.imshow('mask' , mask)
-	#cv2.imshow('img' , img)
+	#cv2.imshow('contours_image' , contours_image)
 	#cv2.waitKey(0)
-	show = np.concatenate((grayscale_image , opening , img , mask) , axis=1)
+	show = np.concatenate((grayscale_image , opening , contours_image , mask) , axis=1)
 	cv2.imshow('resault' , show)
 	cv2.waitKey(0)
 
