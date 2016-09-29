@@ -1,9 +1,9 @@
 from base_loader import BaseLoader
 import cv2
 import numpy as np
-#from matplotlib import pyplot as plt
 import math
 from histogram import Histogram
+from image_chanels import ImageChanels
 
 
 def flood(image , value=0 , single_seed = None):
@@ -31,8 +31,8 @@ def flood(image , value=0 , single_seed = None):
 		floodfill_image = cv2.bitwise_not(floodfill_image)
 	return floodfill_image
 	
-
-def rgb_chanels(rgb_image):
+"""
+def display_rgb(rgb_image):
 	height , width = rgb_image.shape[:2]
 	red_image = np.zeros((height , width) , np.uint8)
 	green_image = np.zeros((height , width) , np.uint8)
@@ -64,7 +64,7 @@ def hsi_chanels(rgb_image, chanel_return = 'S'):
 			val = hsi_image.item( line, col, chanel_index)
 			chanel.itemset((line , col), val)
 	return chanel
-
+"""
 
 def otsu_threshold(image):
 	blur_image = cv2.GaussianBlur(saturation,(5,5),0)
@@ -169,7 +169,7 @@ for image in base.images:
 	print("==============================================")
 	print(image.path)
 	rgb_image = cv2.imread(image.path)
-	grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
+	"""grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
 	saturation = hsi_chanels(rgb_image)
    	otsu_image = otsu_threshold(saturation)
 	flooded_image = flood(otsu_image)
@@ -184,7 +184,7 @@ for image in base.images:
 		else:
 			mask = define_mask(contours_image , opening , contours , cell_center , cell_radius)
 	else:
-		mask = opening.copy()
+		mask = opening.copy()"""
 	print("==============================================")
 	#cv2.imshow('opening' , opening)
 	#cv2.imshow('mask' , mask)
@@ -193,5 +193,7 @@ for image in base.images:
 	#show = np.concatenate((grayscale_image , flooded_image , opening , contours_image , mask) , axis=1)
 	#cv2.imshow('resault' , show)
 	#cv2.waitKey(0)
-	
-	
+	chanels = ImageChanels(rgb_image)
+	red , green , blue = chanels.rgb(display = True)
+	#cv2.imshow('chanel' , green)
+	#cv2.waitKey(100)
