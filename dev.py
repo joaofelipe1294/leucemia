@@ -4,6 +4,7 @@ import numpy as np
 import math
 from histogram import Histogram
 from image_chanels import ImageChanels
+from segmentation import Segmentation
 
 
 def flood(image , value=0 , single_seed = None):
@@ -32,45 +33,11 @@ def flood(image , value=0 , single_seed = None):
 	return floodfill_image
 	
 """
-def display_rgb(rgb_image):
-	height , width = rgb_image.shape[:2]
-	red_image = np.zeros((height , width) , np.uint8)
-	green_image = np.zeros((height , width) , np.uint8)
-	blue_image = np.zeros((height , width) , np.uint8)
-	color_chanels = [blue_image , green_image , red_image]
-	for chanel_index in range(0,3):
-		for line in xrange(0,height):
-			for col in xrange(0,width):
-				value = rgb_image.item(line , col , chanel_index)
-				color_chanels[chanel_index].itemset((line , col) , value)
-	show = np.concatenate(( red_image , green_image , blue_image) , axis=1)
-	cv2.imshow('resault' , show)
-	cv2.imshow('rgb' , rgb_image)
-	cv2.waitKey(0)
-
-
-def hsi_chanels(rgb_image, chanel_return = 'S'):
-	if chanel_return == 'H':
-		chanel_index = 0
-	elif chanel_return == 'S':
-		chanel_index = 1
-	elif chanel_return == 'I':
-		chanel_index = 2
-	hsi_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
-	height , width = rgb_image.shape[:2]
-	chanel = np.zeros((height , width) , np.uint8)
-	for line in xrange(0 , height):
-		for col in xrange(0 , width):
-			val = hsi_image.item( line, col, chanel_index)
-			chanel.itemset((line , col), val)
-	return chanel
-"""
-
 def otsu_threshold(image):
 	blur_image = cv2.GaussianBlur(saturation,(5,5),0)
    	otsu_image = cv2.threshold(blur_image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
    	return otsu_image
-
+"""
 
 def get_number_of_objects(image):
 	img , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -168,9 +135,9 @@ base.load('teste')
 for image in base.images:
 	print("==============================================")
 	print(image.path)
-	rgb_image = cv2.imread(image.path)
-	"""grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
-	saturation = hsi_chanels(rgb_image)
+	"""rgb_image = cv2.imread(image.path)
+	grayscale_image = cv2.imread(image.path ,cv2.IMREAD_GRAYSCALE)
+	saturation = ImageChanels(rgb_image).hsi('S') 
    	otsu_image = otsu_threshold(saturation)
 	flooded_image = flood(otsu_image)
 	opening = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))
@@ -184,16 +151,17 @@ for image in base.images:
 		else:
 			mask = define_mask(contours_image , opening , contours , cell_center , cell_radius)
 	else:
-		mask = opening.copy()"""
+		mask = opening.copy()
+	"""
 	print("==============================================")
 	#cv2.imshow('opening' , opening)
 	#cv2.imshow('mask' , mask)
 	#cv2.imshow('contours_image' , contours_image)
 	#cv2.waitKey(0)
+	#print(mask.shape)
 	#show = np.concatenate((grayscale_image , flooded_image , opening , contours_image , mask) , axis=1)
 	#cv2.imshow('resault' , show)
-	#cv2.waitKey(0)
-	chanels = ImageChanels(rgb_image)
-	red , green , blue = chanels.rgb(display = True)
-	#cv2.imshow('chanel' , green)
-	#cv2.waitKey(100)
+	#cv2.waitKey(150)
+	saturation = Segmentation(image.path).process()
+	cv2.imshow('resault' , saturation)
+	cv2.waitKey(150)
