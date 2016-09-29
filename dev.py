@@ -7,38 +7,6 @@ from image_chanels import ImageChanels
 from segmentation import Segmentation
 
 
-def flood(image , value=0 , single_seed = None):
-	floodfill_image = image.copy()
-	h, w = floodfill_image.shape[:2]                                         
-	mask = np.zeros((h + 2 , w + 2) , np.uint8)                              
-	if single_seed == None:
-		seeds = []
-		for x in xrange(0 , w , 5):
-			seeds.append(tuple([0 , x]))
-			seeds.append(tuple([h - 5 , x]))
-			seeds.append(tuple([x , 0]))
-			seeds.append(tuple([x , w - 5]))
-		for seed in seeds:
-			cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
-	else:
-		seed = single_seed
-		cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
-	white = 0
-	for x in xrange(0,image.shape[0]):
-		for y in xrange(0,image.shape[1]):
-			if floodfill_image.item(x,y) == 255:
-				white += 1
-	if white > ((image.shape[0] * image.shape[1] * 80) / 100):
-		floodfill_image = cv2.bitwise_not(floodfill_image)
-	return floodfill_image
-	
-"""
-def otsu_threshold(image):
-	blur_image = cv2.GaussianBlur(saturation,(5,5),0)
-   	otsu_image = cv2.threshold(blur_image,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
-   	return otsu_image
-"""
-
 def get_number_of_objects(image):
 	img , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 	return len(contours)
@@ -164,4 +132,4 @@ for image in base.images:
 	#cv2.waitKey(150)
 	saturation = Segmentation(image.path).process()
 	cv2.imshow('resault' , saturation)
-	cv2.waitKey(150)
+	cv2.waitKey(0)
