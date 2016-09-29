@@ -12,24 +12,6 @@ def get_number_of_objects(image):
 	return len(contours)
 
 
-def find_interest_cell(image):
-	image_center_point = tuple([int(opening.shape[0] / 2) , int(opening.shape[1]) / 2])
-	img , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	lowest_index = 0
-	lowest_distance = None
-	for contour_index in range(0 , len(contours)):
-		(x,y),cell_radius = cv2.minEnclosingCircle(contours[contour_index])
-		distance_to_center = math.sqrt(math.pow((x - image_center_point[1]) , 2) + math.pow(y - image_center_point[1] , 2))
-		if lowest_distance == None or distance_to_center < lowest_distance:
-			lowest_index = contour_index
-			lowest_distance = distance_to_center
-	(x,y),cell_radius = cv2.minEnclosingCircle(contours[lowest_index])
-	cell_radius = int(cell_radius)
-	contours.pop(lowest_index)
-	cell_center = (int(x),int(y))
-	return cell_center , cell_radius , contours
-
-
 def verifies_intersection(cell_radius , cell_center , object_radius , object_center , image_height , image_width):
 	plan_1 = np.zeros((image_height , image_width) , np.uint8)
 	cv2.circle(plan_1 , cell_center , cell_radius , 100 , 1)
