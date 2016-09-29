@@ -1,8 +1,9 @@
 from base_loader import BaseLoader
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 import math
+from histogram import Histogram
 
 
 def flood(image , value=0 , single_seed = None):
@@ -29,20 +30,6 @@ def flood(image , value=0 , single_seed = None):
 	if white > ((image.shape[0] * image.shape[1] * 80) / 100):
 		floodfill_image = cv2.bitwise_not(floodfill_image)
 	return floodfill_image
-
-
-def display_rgb_histogram(rgb_image):
-	color = ('b','g','r')
-	for i,col in enumerate(color):
-		histr = cv2.calcHist([rgb_image],[i],None,[256],[0,256])
-		plt.plot(histr,color = col)
-		plt.xlim([0,256])
-	plt.show()
-
-
-def display_gray_scale_histogram(grayscale_image):
-	plt.hist(grayscale_image.ravel(),256,[0,256])
-	plt.show()
 	
 
 def rgb_chanels(rgb_image):
@@ -203,8 +190,8 @@ for image in base.images:
 	#cv2.imshow('mask' , mask)
 	#cv2.imshow('contours_image' , contours_image)
 	#cv2.waitKey(0)
-	show = np.concatenate((grayscale_image , flooded_image , opening , contours_image , mask) , axis=1)
-	cv2.imshow('resault' , show)
-	cv2.waitKey(0)
-
+	#show = np.concatenate((grayscale_image , flooded_image , opening , contours_image , mask) , axis=1)
+	#cv2.imshow('resault' , show)
+	#cv2.waitKey(0)
+	
 	
