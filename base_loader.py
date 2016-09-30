@@ -14,6 +14,6 @@ class BaseLoader(object):
 		for path in paths:
 			image_id = path[2:5]
 			image_path = self.base_path + '/' + path
-			label = paths[0][6:7]
+			label = path[len(path) - 5:len(path) - 4]
 			image = Image(image_id = image_id , path = image_path , label = label)
 			self.images.append(image)

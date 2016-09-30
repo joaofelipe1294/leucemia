@@ -3,6 +3,7 @@ import numpy as np
 from image_chanels import ImageChanels
 import math
 
+
 class Segmentation(object):
 
 
@@ -28,7 +29,7 @@ class Segmentation(object):
 			self.mask = opened_image
 		else:
 			self.mask = self.remove_noise_objects(contour_image , threshold_image)
-		self.build_mask()
+		self.mask = self.build_mask()
 		return self.mask
 
 
@@ -123,7 +124,6 @@ class Segmentation(object):
 					self.mask.itemset((line , col) , 255)
 				else:
 					self.mask.itemset((line , col) , 0)
-
 		for line in xrange(0 , self.height):
 			for col in xrange(0 , self.width):
 				if self.mask.item(line , col) == 255:
@@ -138,6 +138,4 @@ class Segmentation(object):
 			for line in xrange(0 , self.height):
 				for col in xrange(0 , self.width):
 					copy.itemset((line , col , chanel_index) , chanels[chanel_index].item(line , col))
-		cv2.imshow('resault' , copy)
-		cv2.imshow('original' , self.rgb_image)
-		cv2.waitKey(350)
+		return copy

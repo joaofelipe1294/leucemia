@@ -7,9 +7,10 @@ class Histogram(object):
 		#exibe o histograma de uma imagem RGB
 		color = ('b','g','r')
 		for i,col in enumerate(color):
-			histr = cv2.calcHist([rgb_image],[i],None,[256],[0,256])
+			histr = cv2.calcHist([rgb_image],[i],None,[256],[1,256])
 			plt.plot(histr,color = col)
 			plt.xlim([0,256])
+		
 		plt.show()
 
 
