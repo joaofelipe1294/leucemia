@@ -18,7 +18,7 @@ class Segmentation(object):
 
 	def process(self):                                      
 		#faz a segmentacao da celula de interece   
-		saturation = ImageChanels(self.rgb_image).hsi('S')                                         #extraido canal relativo a Saturacao
+		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
 		threshold_image = self.otsu_threshold(saturation)                                          #aplica threshold de OTSU no canal referente a saturacao 
 		flooded_image = self.flood(threshold_image)                                                #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
 		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
@@ -140,4 +140,4 @@ class Segmentation(object):
 					copy.itemset((line , col , chanel_index) , chanels[chanel_index].item(line , col))
 		cv2.imshow('resault' , copy)
 		cv2.imshow('original' , self.rgb_image)
-		cv2.waitKey(250)
+		cv2.waitKey(350)

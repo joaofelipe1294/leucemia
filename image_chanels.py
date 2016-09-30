@@ -48,7 +48,7 @@ class ImageChanels(object):
 			return 	red_chanel , green_chanel , blue_chanel
 
 
-	def hsi(self, chanel = None , display = False):
+	def hsv(self, chanel = None , display = False):
 		#trabalha com canais HSI
 		chanel_index = -1
 		if chanel:                           #trabalha com apenas um canal
@@ -56,7 +56,7 @@ class ImageChanels(object):
 				chanel_index = 0
 			elif chanel == 'S':
 				chanel_index = 1
-			elif chanel_index == 'I':
+			elif chanel_index == 'V':
 				chanel = 2
 			hsi_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2HSV)
 			chanel_image = np.zeros((self.height , self.width) , np.uint8)
