@@ -10,6 +10,7 @@ class FeatureExtractor(object):
 		self.variance = 0
 		self.perimeter = 0
 		self.excess = 0
+		
 
 	def get_features(self):
 		gray_image = cv2.cvtColor(self.segmented_image, cv2.COLOR_BGR2GRAY)
@@ -32,7 +33,7 @@ class FeatureExtractor(object):
 
 	def get_variance(self , gray_image):
 		variance = np.var(gray_image)
-		self.variance = variance
+		self.variance = int(variance)
 
 
 	def get_perimeter(self , contours):
