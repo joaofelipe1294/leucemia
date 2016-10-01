@@ -39,11 +39,11 @@ class BaseLoader(object):
 		for line in file:
 			values = line.split(',')
 			area = int(values[0])
-			variance = int(values[1])
-			perimeter = int(values[2])
-			excess = int(values[3])
+			perimeter = int(values[1])
+			excess = int(values[2])
+			average = int(values[3])
 			label = int(values[4])
-			self.train_vectors.append([area , variance , perimeter , excess])
+			self.train_vectors.append([area , perimeter , excess , average])
 			self.train_labels.append(label)
 		file.close()
 		print("Vetores carregados")
@@ -76,7 +76,7 @@ class BaseLoader(object):
 		iteration = 0
 		for image in images:
 			segmented_image = Segmentation(image.path).process()
-			area , variance , perimeter , excess = FeatureExtractor(segmented_image).get_features()
+			area , perimeter , excess , average = FeatureExtractor(segmented_image).get_features()
 			base_features.append([area , perimeter , excess])
 			iteration += 1
 			self.printProgress(iteration , len(images) , prefix = "Treinamento : ")
@@ -84,7 +84,7 @@ class BaseLoader(object):
 			file = open(file_path , 'w')
 			iteration = 0
 			for features in base_features:
-				file.write(str(features[0]) + ' , ' + str(features[1]) + ' , ' + str(images[iteration].label) + '\n')
+				file.write(str(features[0]) +  ' , ' + str(features[1]) + ' , ' + str(features[2]) + str(images[iteration].label) + '\n')
 				iteration += 1
 			file.close()
 			self.train_vectors = base_features

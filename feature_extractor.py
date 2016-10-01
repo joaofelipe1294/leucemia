@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
 import math
+from image_chanels import ImageChanels
 
 class FeatureExtractor(object):
 
 	def __init__(self , segmented_image):
 		self.segmented_image = segmented_image
 		self.area = 0
-		self.variance = 0
 		self.perimeter = 0
 		self.excess = 0
 		
@@ -18,10 +18,10 @@ class FeatureExtractor(object):
 		contours_image, contours, hierarchy = cv2.findContours(binary_image.copy() , cv2.RETR_TREE , cv2.CHAIN_APPROX_SIMPLE)
 		cv2.drawContours(contours_image, contours, -1, 255, 1)
 		self.get_area(gray_image)
-		self.get_variance(gray_image)
 		self.get_perimeter(contours)
 		self.get_excess(contours)
-		return self.area , self.variance , self.perimeter , self.excess
+		self.get_average()
+		return self.area , self.perimeter , self.excess , self.average
 
 
 	def get_area(self , gray_image):
@@ -33,11 +33,6 @@ class FeatureExtractor(object):
 			normalized_area = 0
 		self.area =  normalized_area
 		
-
-	def get_variance(self , gray_image):
-		variance = np.var(gray_image)
-		self.variance = int(variance)
-
 
 	def get_perimeter(self , contours):
 		cell_perimeter = 0
@@ -60,3 +55,19 @@ class FeatureExtractor(object):
 			relative_area = 0
 		self.excess = relative_area
 		
+
+	def get_average(self):
+		red , green , blue = ImageChanels(self.segmented_image).rgb()
+		mean_image = (red + green + blue) / 3
+		occurences = 0
+		sum_values = 0
+		for line in xrange(0 , self.segmented_image.shape[0]):
+			for col in xrange(0 , self.segmented_image.shape[1]):
+				value = mean_image.item(line , col)
+				if value > 0:
+					occurences += 1
+					sum_values += value
+		if sum_values > 0:
+			self.average = int(sum_values / occurences)
+		else:
+			self.average = 0
