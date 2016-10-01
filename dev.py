@@ -9,7 +9,8 @@ from feature_extractor import FeatureExtractor
 import math
 
 
-base = BaseLoader('teste')
+base = BaseLoader(valid_base_path = 'teste_validacao')
+#base = BaseLoader('teste')
 #base = BaseLoader('ALL_IDB2/img')
 #base = BaseLoader('Teste_ALL_IDB2/V0')
 #base = BaseLoader('Teste_ALL_IDB2/V0')

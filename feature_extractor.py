@@ -27,7 +27,10 @@ class FeatureExtractor(object):
 	def get_area(self , gray_image):
 		height , width = gray_image.shape[:2]
 		area = np.count_nonzero(gray_image)
-		normalized_area = (area * 100) / (height * width)
+		if area:
+			normalized_area = (area * 100) / (height * width)
+		else:
+			normalized_area = 0
 		self.area =  normalized_area
 		
 
@@ -51,6 +54,9 @@ class FeatureExtractor(object):
 			(x,y),radius = cv2.minEnclosingCircle(contour)
 			radius = int(radius)
 			circunference_area += int(math.pi * (radius * radius))
-		relative_area = (cell_area * 100) / circunference_area
+		if cell_area:
+			relative_area = (cell_area * 100) / circunference_area
+		else:
+			relative_area = 0
 		self.excess = relative_area
 		

@@ -9,16 +9,39 @@ from feature_extractor import FeatureExtractor
 class BaseLoader(object):
 
 
-	def __init__(self , train_base_path = None):
+	def __init__(self , train_base_path = None , valid_base_path = None):
 		self.train_base_path = train_base_path
 		self.train_images = []
 		self.train_file = "train_data.txt"
 		self.train_vectors = []
+		self.valid_base_path = valid_base_path
+		self.valid_images = []
+		self.valid_vectors = []
 
 
 	def load(self):
-		self.train_images = self.load_base_images(self.train_base_path)
-		self.train(file_path = self.train_file , images = self.train_images , train = True)
+		if self.train_base_path:
+			self.train_images = self.load_base_images(self.train_base_path)
+			self.extract_features(file_path = self.train_file , images = self.train_images , train = True)
+		else:
+			self.load_train_vectors_from_file()
+		self.valid_images = self.load_base_images(self.valid_base_path)
+		self.extract_features(images = self.valid_images)
+
+
+	def load_train_vectors_from_file(self):
+		print("Carregando vetores ...")
+		file = open( self.train_file, 'r')
+		for line in file:
+			values = line.split(',')
+			area = int(values[0])
+			variance = int(values[1])
+			perimeter = int(values[2])
+			excess = int(values[3])
+			label = int(values[4])
+			self.train_vectors.append([area , variance , perimeter , excess , label])
+		file.close()
+		print("Vetores carregados")
 
 
 	def load_base_images(self , base_path):
@@ -36,21 +59,24 @@ class BaseLoader(object):
 		return images
 
 
-	def train(self , file_path = None , images = None , train = False):
-		file = open(file_path , 'w')
+	def extract_features(self , file_path = None , images = None , train = False):
+		base_features = []
 		iteration = 0
 		for image in images:
-			iteration += 1
 			segmented_image = Segmentation(image.path).process()
 			area , variance , perimeter , excess = FeatureExtractor(segmented_image).get_features()
-			if train:
+			base_features.append([area , variance , perimeter , excess])
+			iteration += 1
+			self.printProgress(iteration , len(images) , prefix = "Treinamento : ")
+		if train:
+			file = open(file_path , 'w')
+			iteration = 0
+			for features in base_features:
 				file.write(str(area) + ' , ' + str(variance) + ' , ' + str(perimeter) + ' , ' + str(excess) + ' , ' + image.label + '\n')
-				self.train_vectors.append([area , variance , perimeter , excess , image.label])
-				self.printProgress(iteration , len(images) , prefix = "Treinamento : ")
-			else:
-				file.write(str(area) + ' , ' + str(variance) + ' , ' + str(perimeter) + ' , ' + str(excess) + '\n')
-				self.printProgress(iteration , len(images) , prefix = "Validacao : ")
-		file.close()
+				self.train_vectors.append([area , variance , perimeter , excess , images[iteration].label])
+			file.close()
+		else:
+			self.valid_vectors = base_features
 
 
 
