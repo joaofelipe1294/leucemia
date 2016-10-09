@@ -139,3 +139,31 @@ class Segmentation(object):
 				for col in xrange(0 , self.width):
 					copy.itemset((line , col , chanel_index) , chanels[chanel_index].item(line , col))
 		return copy
+
+
+"""
+	def segment_cell(self):
+		gray_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2GRAY)
+		flood = self.flood(gray_image)
+		cv2.imshow('gray image' , flood)
+		cv2.waitKey(0)		
+
+
+from base_loader import *
+
+
+
+
+paths = os.listdir('teste')
+paths.sort()
+images = []
+for image_path in paths:
+	segmented_image = Segmentation('ALL_IDB2/img/' + image_path).segment_cell()
+	#cv2.imshow('segmented image' , segmented_image)
+	#cv2.waitKey(350)
+
+#image_path = "ALL_IDB2/img/Im021_1.tif"
+#segmented_image = Segmentation(image_path).segment_cell()
+#cv2.imshow('segmented image' , segmented_image)
+#cv2.waitKey(0)
+"""

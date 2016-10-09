@@ -14,38 +14,25 @@ class ImageChanels(object):
 
 	def rgb(self , chanel = None , display = False):
 		#trabalha com canais RGB
-		chanel_index = -1                    #inicializado com o valor -1 pelo fato de que esta variavel deve ser do tipo int
-		if chanel:                           #trabalha com apenas um canal
-			if chanel == 'R':
-				chenel_index = 2
+		if chanel:                       #verifica se deve retornar um canal especifico 
+			if chanel == 'B':
+				chanel_index = 0
 			elif chanel == 'G':
 				chanel_index = 1
-			elif chanel == 'B':
-				chanel_index = 0
-			chanel_image = np.zeros((self.height , self.width) , np.uint8)
-			for line in xrange(0,self.height):
-				for col in xrange(0,self.width):
-					value = self.rgb_image.item(line , col , chanel_index)
-					chanel_image.itemset((line , col) , value)
+			elif chanel == 'R':
+				chanel_index = 2
+			color_chanel = cv2.split(self.rgb_image)[chanel_index]
 			if display:
-				cv2.imshow('chanel' , chanel_image)
+				cv2.imshow('chanel' , color_chanel)
 				cv2.waitKey(0)
-			return chanel_image
-		else:                              #trabalha com todos os canais RGB
-			red_chanel = np.zeros((self.height , self.width) , np.uint8)
-			green_chanel = np.zeros((self.height , self.width) , np.uint8)
-			blue_chanel = np.zeros((self.height , self.width) , np.uint8)
-			color_chanels = [blue_chanel , green_chanel , red_chanel]
-			for chanel_index in range(0,3):
-				for line in xrange(0,self.height):
-					for col in xrange(0,self.width):
-						value = self.rgb_image.item(line , col , chanel_index)
-						color_chanels[chanel_index].itemset((line , col) , value)
+			return color_chanels
+		else:
+			blue_chanel , green_chanel , red_chanel = cv2.split(self.rgb_image)
 			if display:
 				show = np.concatenate(( red_chanel , green_chanel , blue_chanel) , axis=1)
 				cv2.imshow('resault' , show)
-				cv2.waitKey(0)		
-			return 	red_chanel , green_chanel , blue_chanel
+				cv2.waitKey(0)				
+			return red_chanel , green_chanel , blue_chanel
 
 
 	def hsv(self, chanel = None , display = False):
@@ -84,3 +71,13 @@ class ImageChanels(object):
 				cv2.imshow('resault' , show)
 				cv2.waitKey(0)		
 			return 	hue_chanel , saturation_chanel , intensity_chanel
+
+
+
+image = cv2.imread('ALL_IDB2/img/Im001_1.tif')
+#cv2.imshow('image' , image)
+#cv2.waitKey(0)
+r , g , b = ImageChanels(image).rgb(display = True)
+show = np.concatenate(( r , g , b) , axis=1)
+cv2.imshow('resault' , show)
+cv2.waitKey(0)				

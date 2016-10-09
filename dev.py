@@ -1,5 +1,7 @@
 from base_loader import BaseLoader
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from segmentation import *
 from image_chanels import *
 import numpy as np
@@ -18,14 +20,22 @@ base = BaseLoader(train_base_path = 'ALL_IDB2/img' ,  valid_base_path = 'Teste_A
 #base = BaseLoader(valid_base_path = 'Teste_ALL_IDB2/ALL')
 #base = BaseLoader('teste_validacao')
 base.load()
+
+
 X = base.train_vectors
 y = base.train_labels
 
 neigh = KNeighborsClassifier(n_neighbors=3)
 neigh.fit(X, y)
 classes = neigh.predict(base.valid_vectors)
-print(classes)
 
+#clf = SVC()
+#clf.fit(X, y)
+#classes = clf.predict(base.valid_vectors)
+
+#clf = LinearDiscriminantAnalysis()
+#clf.fit(X, y)
+#classes = clf.predict(base.valid_vectors)
 
 corrects = 0
 errors = 0
@@ -38,6 +48,8 @@ print("Corrects : " + str(corrects))
 print("ERRORS : " + str(errors))
 percentage = (corrects * 100) / len(base.valid_vectors)
 print("PERCENTAGE : " + str(percentage))
+
+
 """
 for image in  base.train_images:
 	segmented_image = Segmentation(image.path).process()

@@ -42,7 +42,6 @@ class BaseLoader(object):
 			perimeter = int(values[1])
 			excess = int(values[2])
 			average = int(values[3])
-			label = int(values[4])
 			self.train_vectors.append([area , perimeter , excess , average])
 			self.train_labels.append(label)
 		file.close()
@@ -84,7 +83,7 @@ class BaseLoader(object):
 			file = open(file_path , 'w')
 			iteration = 0
 			for features in base_features:
-				file.write(str(features[0]) +  ' , ' + str(features[1]) + ' , ' + str(features[2]) + str(images[iteration].label) + '\n')
+				file.write(str(features[0]) +  ' , ' + str(features[1]) + ' , ' + str(features[2]) + ' , ' + str(images[iteration].label) + '\n')
 				iteration += 1
 			file.close()
 			self.train_vectors = base_features
@@ -112,3 +111,7 @@ class BaseLoader(object):
 	    if iteration == total:
 	        sys.stdout.write('\n')
 	    sys.stdout.flush()
+
+
+
+
