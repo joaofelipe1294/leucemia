@@ -29,8 +29,8 @@ class Segmentation(object):
 			self.mask = opened_image
 		else:
 			self.mask = self.remove_noise_objects(contour_image , threshold_image)
-		self.mask = self.build_mask()
-		return self.mask
+		segmented_image = self.build_mask()
+		return segmented_image
 
 
 	def otsu_threshold(self , image):
@@ -104,7 +104,7 @@ class Segmentation(object):
 
 
 	def remove_noise_objects(self , contours_image , threshold_image):
-		#metoco com o objetivo de remover qualquer objeto da imagem que nao seja a celula de interesse
+		#metodo com o objetivo de remover qualquer objeto da imagem que nao seja a celula de interesse
 		flooded_image = self.flood(contours_image.copy() , 255 , single_seed = self.cell_center)   #preenche a celula central 
 		for contour in self.contours:                                                              #varre todos os contornos e verifica se a celula possui o nucleo vazado , nesse caso ocorre uma excecao que sera corrigida mais pra frente
 			(x,y) , object_radius = cv2.minEnclosingCircle(contour)                                #computa o raio e o ponto central do contorno
@@ -118,52 +118,11 @@ class Segmentation(object):
 
 
 	def build_mask(self):
-		for line in xrange(0 , self.height):
-			for col in xrange(0 , self.width):
-				if self.mask.item(line , col) > 200:
-					self.mask.itemset((line , col) , 255)
-				else:
-					self.mask.itemset((line , col) , 0)
-		for line in xrange(0 , self.height):
-			for col in xrange(0 , self.width):
-				if self.mask.item(line , col) == 255:
-					self.mask.itemset((line , col) , 1)
+		#retorna a imagem segmentada , multilpica cada um dos canais RGB pela mascara
+		self.mask = cv2.threshold(self.mask,127,1,cv2.THRESH_BINARY)[1]  #usado para criar a mascara composta por valores 1 e 0
 		red , green , blue = ImageChanels(self.rgb_image).rgb()
 		red = red * self.mask
 		green = green * self.mask
 		blue = blue * self.mask
-		chanels = [blue , green , red]
-		copy = self.rgb_image.copy()
-		for chanel_index in xrange(0,3):
-			for line in xrange(0 , self.height):
-				for col in xrange(0 , self.width):
-					copy.itemset((line , col , chanel_index) , chanels[chanel_index].item(line , col))
-		return copy
-
-
-"""
-	def segment_cell(self):
-		gray_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2GRAY)
-		flood = self.flood(gray_image)
-		cv2.imshow('gray image' , flood)
-		cv2.waitKey(0)		
-
-
-from base_loader import *
-
-
-
-
-paths = os.listdir('teste')
-paths.sort()
-images = []
-for image_path in paths:
-	segmented_image = Segmentation('ALL_IDB2/img/' + image_path).segment_cell()
-	#cv2.imshow('segmented image' , segmented_image)
-	#cv2.waitKey(350)
-
-#image_path = "ALL_IDB2/img/Im021_1.tif"
-#segmented_image = Segmentation(image_path).segment_cell()
-#cv2.imshow('segmented image' , segmented_image)
-#cv2.waitKey(0)
-"""
+		return cv2.merge((blue , green , red)) #remonta os canais da imagem rgb
+	

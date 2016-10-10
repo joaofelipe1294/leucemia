@@ -25,17 +25,17 @@ base.load()
 X = base.train_vectors
 y = base.train_labels
 
-neigh = KNeighborsClassifier(n_neighbors=3)
-neigh.fit(X, y)
-classes = neigh.predict(base.valid_vectors)
+#neigh = KNeighborsClassifier(n_neighbors=3)
+#neigh.fit(X, y)
+#classes = neigh.predict(base.valid_vectors)
 
 #clf = SVC()
 #clf.fit(X, y)
 #classes = clf.predict(base.valid_vectors)
 
-#clf = LinearDiscriminantAnalysis()
-#clf.fit(X, y)
-#classes = clf.predict(base.valid_vectors)
+clf = LinearDiscriminantAnalysis()
+clf.fit(X, y)
+classes = clf.predict(base.valid_vectors)
 
 corrects = 0
 errors = 0
