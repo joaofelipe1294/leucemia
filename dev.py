@@ -2,11 +2,13 @@ from base_loader import BaseLoader
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from segmentation import *
-from image_chanels import *
-import numpy as np
-import cv2
-from feature_extractor import *
+from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+#from segmentation import *
+#from image_chanels import *
+#import numpy as np
+#import cv2
+#from feature_extractor import *
 
 
 
@@ -25,42 +27,44 @@ base.load()
 X = base.train_vectors
 y = base.train_labels
 
-#neigh = KNeighborsClassifier(n_neighbors=3)
-#neigh.fit(X, y)
-#classes = neigh.predict(base.valid_vectors)
 
-#clf = SVC()
-#clf.fit(X, y)
-#classes = clf.predict(base.valid_vectors)
+clf = KNeighborsClassifier(n_neighbors = 3)
 
-clf = LinearDiscriminantAnalysis()
+#clf = SVC(kernel="linear")
+
+#clf = LinearDiscriminantAnalysis()
+
+#clf = tree.DecisionTreeClassifier()
+
+#clf = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
+
+#clf = AdaBoostClassifier()
+
+
 clf.fit(X, y)
 classes = clf.predict(base.valid_vectors)
 
+
 corrects = 0
 errors = 0
-for index in xrange(0 , len(classes) - 1):
+fn = 0
+fp = 0
+for index in xrange(0 , len(classes)):
 	if classes[index] == base.valid_labels[index]:
 		corrects += 1
 	else:
+		if classes[index] == 1:
+			fn += 1
+		elif classes[index] == 0:
+			fp += 1
 		errors += 1
 print("Corrects : " + str(corrects))
 print("ERRORS : " + str(errors))
 percentage = (corrects * 100) / len(base.valid_vectors)
 print("PERCENTAGE : " + str(percentage))
+print("FALSE NEGATIVES : " + str(fn))
+print("FALSE POSITIVES : " + str(fp))
 
-
-"""
-for image in  base.train_images:
-	segmented_image = Segmentation(image.path).process()
-	cv2.imshow('segmented_image' , segmented_image)
-	red , green , blue = ImageChanels(segmented_image).rgb()
-	sum_image = red + green + blue
-	print(image.path)
-	show = np.concatenate(( red , green , blue , sum_image / 3) , axis=1)
-	cv2.imshow('resault' , show)
-	cv2.waitKey(350)
-"""
 
 
 """
