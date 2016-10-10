@@ -1,5 +1,7 @@
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+
 
 class Classifier(object):
 
@@ -23,4 +25,9 @@ class Classifier(object):
 
 	def svm(self):
 		self.classifier = SVC(kernel="linear" , C = 0.025)
+		return self.train_and_predict()
+
+
+	def lda(self):
+		self.classifier = LinearDiscriminantAnalysis()
 		return self.train_and_predict()

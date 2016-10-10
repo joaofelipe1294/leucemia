@@ -1,5 +1,4 @@
 from base_loader import BaseLoader
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from classifier import Classifier
@@ -11,8 +10,6 @@ X = base.train_vectors
 y = base.train_labels
 
 
-#clf = SVC(kernel="linear" , C = 0.025)
-#clf = LinearDiscriminantAnalysis()
 #clf = tree.DecisionTreeClassifier()
 #clf = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
 #clf = AdaBoostClassifier()
@@ -22,8 +19,8 @@ y = base.train_labels
 #classes = clf.predict(base.valid_vectors)
 
 
-#classes = Classifier(X , y , base.valid_vectors).knn()
-classes = Classifier(X , y , base.valid_vectors).svm()
+
+classes = Classifier(X , y , base.valid_vectors).lda()
 corrects = 0
 errors = 0
 fn = 0
