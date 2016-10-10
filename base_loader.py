@@ -111,7 +111,3 @@ class BaseLoader(object):
 	    if iteration == total:
 	        sys.stdout.write('\n')
 	    sys.stdout.flush()
-
-
-
-

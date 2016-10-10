@@ -1,5 +1,5 @@
 from sklearn.neighbors import KNeighborsClassifier
-
+from sklearn.svm import SVC
 
 class Classifier(object):
 
@@ -11,9 +11,9 @@ class Classifier(object):
 		
 
 	def train_and_predict(self):
-		self.classifier.fit(self.X_train, self.y_train) #traina o classificador
-		classes = self.classifier.predict(self.X_valid) #preve as classe para cada uma das entradas
-		return classes
+		self.classifier.fit(self.X_train, self.y_train)  #traina o classificador
+		classes = self.classifier.predict(self.X_valid)  #preve as classe para cada uma das entradas
+		return classes                                   #retorna as classes que foram 
 
 
 	def knn(self , k = 3):
@@ -21,4 +21,6 @@ class Classifier(object):
 		return self.train_and_predict()
 		
 
-	
+	def svm(self):
+		self.classifier = SVC(kernel="linear" , C = 0.025)
+		return self.train_and_predict()
