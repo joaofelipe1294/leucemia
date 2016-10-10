@@ -10,8 +10,15 @@ class Classifier(object):
 		self.X_valid = X_valid
 		
 
+	def train_and_predict(self):
+		self.classifier.fit(self.X_train, self.y_train) #traina o classificador
+		classes = self.classifier.predict(self.X_valid) #preve as classe para cada uma das entradas
+		return classes
+
+
 	def knn(self , k = 3):
 		self.classifier = KNeighborsClassifier(n_neighbors = k)
-		self.classifier.fit(self.X_train, self.y_train)
-		classes = self.classifier.predict(self.X_valid)
-		return classes		
+		return self.train_and_predict()
+		
+
+	

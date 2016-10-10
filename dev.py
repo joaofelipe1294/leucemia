@@ -1,5 +1,4 @@
 from base_loader import BaseLoader
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import tree
@@ -13,16 +12,10 @@ X = base.train_vectors
 y = base.train_labels
 
 
-#clf = KNeighborsClassifier(n_neighbors = 3)
-
 #clf = SVC(kernel="linear" , C = 0.025)
-
 #clf = LinearDiscriminantAnalysis()
-
 #clf = tree.DecisionTreeClassifier()
-
 #clf = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
-
 #clf = AdaBoostClassifier()
 
 
