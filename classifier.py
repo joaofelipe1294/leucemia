@@ -36,12 +36,12 @@ class Classifier(object):
 		return self.train_and_predict()
 
 
-	def adaboost(self):
+	def adaptative_boost(self):
 		self.classifier =  AdaBoostClassifier()
 		return self.train_and_predict()
 
 
-	def randon_forest(self):
+	def random_forest(self):
 		self.classifier = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
 		return self.train_and_predict()
 

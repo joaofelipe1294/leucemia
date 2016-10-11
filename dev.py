@@ -1,5 +1,6 @@
 from base_loader import BaseLoader
 from classifier import Classifier
+from merge_classifiers import MergeClassifiers
 
 
 base = BaseLoader(train_base_path = 'ALL_IDB2/img' ,  valid_base_path = 'Teste_ALL_IDB2/ALL')
@@ -8,17 +9,7 @@ X = base.train_vectors
 y = base.train_labels
 
 
-#clf = tree.DecisionTreeClassifier()
-#clf = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
-#clf = AdaBoostClassifier()
-
-
-#clf.fit(X, y)
-#classes = clf.predict(base.valid_vectors)
-
-
-
-classes = Classifier(X , y , base.valid_vectors).decision_tree()
+classes = MergeClassifiers(X , y , base.valid_vectors).vote('SVM' , 'LDA' , 'RFOREST' , 'KNN') #Classifier(X , y , base.valid_vectors).decision_tree()
 corrects = 0
 errors = 0
 fn = 0
