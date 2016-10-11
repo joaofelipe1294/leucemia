@@ -1,6 +1,5 @@
 from base_loader import BaseLoader
 from sklearn import tree
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from classifier import Classifier
 
 
@@ -20,7 +19,7 @@ y = base.train_labels
 
 
 
-classes = Classifier(X , y , base.valid_vectors).lda()
+classes = Classifier(X , y , base.valid_vectors).randon_forest()
 corrects = 0
 errors = 0
 fn = 0

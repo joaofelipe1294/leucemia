@@ -1,5 +1,7 @@
 from sklearn.svm import SVC
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 
@@ -30,4 +32,14 @@ class Classifier(object):
 
 	def lda(self):
 		self.classifier = LinearDiscriminantAnalysis()
+		return self.train_and_predict()
+
+
+	def adaboost(self):
+		self.classifier =  AdaBoostClassifier()
+		return self.train_and_predict()
+
+
+	def randon_forest(self):
+		self.classifier = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
 		return self.train_and_predict()
