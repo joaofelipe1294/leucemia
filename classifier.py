@@ -1,4 +1,5 @@
 from sklearn.svm import SVC
+from sklearn import tree
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -42,4 +43,9 @@ class Classifier(object):
 
 	def randon_forest(self):
 		self.classifier = RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)
+		return self.train_and_predict()
+
+
+	def decision_tree(self):
+		self.classifier = tree.DecisionTreeClassifier()
 		return self.train_and_predict()

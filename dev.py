@@ -1,5 +1,4 @@
 from base_loader import BaseLoader
-from sklearn import tree
 from classifier import Classifier
 
 
@@ -19,7 +18,7 @@ y = base.train_labels
 
 
 
-classes = Classifier(X , y , base.valid_vectors).randon_forest()
+classes = Classifier(X , y , base.valid_vectors).decision_tree()
 corrects = 0
 errors = 0
 fn = 0
