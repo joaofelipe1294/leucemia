@@ -9,7 +9,7 @@ X = base.train_vectors
 y = base.train_labels
 
 
-classes = MergeClassifiers(X , y , base.valid_vectors).vote('SVM' , 'LDA' , 'RFOREST' , 'KNN') #Classifier(X , y , base.valid_vectors).decision_tree()
+classes = MergeClassifiers(X , y , base.valid_vectors).vote('SVM' , 'LDA' , 'TREE')
 corrects = 0
 errors = 0
 fn = 0

@@ -28,10 +28,10 @@ class MergeClassifiers(object):
 
 
 	def vote(self , *classifiers):
+		#metodo que aplica fusao de classificadores por meio do voto majoritario
 		predictions = []
 		for classifier_name in classifiers:
 			predictions.append(self.use_classifier(classifier_name))
-		
 		classes = []
 		for index in xrange(0 , len(predictions[0])):
 			positive_votes = 0
@@ -48,4 +48,13 @@ class MergeClassifiers(object):
 		return classes
 
 
+	def weighted_vote(self , *classifiers_and_weights):
+		#fazer com que os votos de certos classificadores valham mais do que outros
+		classifiers = classifiers_and_weights[:len(classifiers_and_weights) / 2]
+		weights = classifiers_and_weights[len(classifiers_and_weights) / 2:]
+		pass
+
+
+
+MergeClassifiers([] , [] , []).weighted_vote('KNN' , 'SVM' , 'LDA' , 3 , 3, 2)
 
