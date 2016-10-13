@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+from modules.utils.progress_bar import ProgressBar
 from modules.models.image import Image
 from modules.image_processing.segmentation import Segmentation
 from modules.features.feature_extractor import FeatureExtractor
@@ -78,7 +79,7 @@ class BaseLoader(object):
 			area , perimeter , excess , average = FeatureExtractor(segmented_image).get_features()
 			base_features.append([area , perimeter , excess])
 			iteration += 1
-			self.printProgress(iteration , len(images) , prefix = "Treinamento : ")
+			ProgressBar().printProgress(iteration , len(images) , prefix = "Treinamento : ")
 		if train:
 			file = open(file_path , 'w')
 			iteration = 0
@@ -89,25 +90,3 @@ class BaseLoader(object):
 			self.train_vectors = base_features
 		else:
 			self.valid_vectors = base_features
-
-
-
-	def printProgress (self , iteration, total, prefix = '', suffix = '', decimals = 1, barLength = 100):
-	    """
-	    Call in a loop to create terminal progress bar
-	    @params:
-	        iteration   - Required  : current iteration (Int)
-	        total       - Required  : total iterations (Int)
-	        prefix      - Optional  : prefix string (Str)
-	        suffix      - Optional  : suffix string (Str)
-	        decimals    - Optional  : positive number of decimals in percent complete (Int)
-	        barLength   - Optional  : character length of bar (Int)
-	    """
-	    formatStr       = "{0:." + str(decimals) + "f}"
-	    percents        = formatStr.format(100 * (iteration / float(total)))
-	    filledLength    = int(round(barLength * iteration / float(total)))
-	    bar             = '█' * filledLength + '-' * (barLength - filledLength)
-	    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-	    if iteration == total:
-	        sys.stdout.write('\n')
-	    sys.stdout.flush()
