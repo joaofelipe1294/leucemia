@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 import math
-from image_chanels import ImageChanels
+from modules.image_processing.image_chanels import ImageChanels
 
 class FeatureExtractor(object):
 

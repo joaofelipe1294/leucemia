@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-from image import Image
-from segmentation import Segmentation
-from feature_extractor import FeatureExtractor
+from modules.models.image import Image
+from modules.image_processing.segmentation import Segmentation
+from modules.features.feature_extractor import FeatureExtractor
 
 
 class BaseLoader(object):

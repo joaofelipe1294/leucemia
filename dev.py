@@ -1,9 +1,9 @@
-from base_loader import BaseLoader
-from classifier import Classifier
-from merge_classifiers import MergeClassifiers
+from modules.base.base_loader import BaseLoader
+from modules.machine_learning.classifier import Classifier
+from modules.machine_learning.merge_classifiers import MergeClassifiers
 
 
-base = BaseLoader(train_base_path = 'ALL_IDB2/img' ,  valid_base_path = 'Teste_ALL_IDB2/ALL')
+base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  valid_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 X = base.train_vectors
 y = base.train_labels
