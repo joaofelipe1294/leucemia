@@ -10,18 +10,45 @@ from modules.features.feature_extractor import FeatureExtractor
 class BaseLoader(object):
 
 
-	def __init__(self , train_base_path = None , valid_base_path = None):
+	def __init__(self , train_base_path = None , validation_base_path = None):
 		self.train_base_path = train_base_path
 		self.train_images = []
-		self.train_file = "train_data.txt"
-		self.train_vectors = []
 		self.train_labels = []
-		self.valid_base_path = valid_base_path
-		self.valid_images = []
-		self.valid_vectors = []
-		self.valid_labels = []
+		self.validation_base_path = validation_base_path
+		self.validation_images = []
+		self.validation_labels = []
 
 
+	def load(self):
+		self.train_images = self.load_base_images(self.train_base_path)
+		self.validation_images = self.load_base_images(self.validation_base_path)
+		self.train_labels = self.get_labels(self.train_images)
+		self.validation_labels = self.get_labels(self.validation_images)
+
+
+	def load_base_images(self , base_path):
+		print("Carregando imagens de " + base_path + " ...")
+		paths = os.listdir(base_path)
+		paths.sort()
+		images = []
+		for path in paths:
+			image_id = path[2:5]
+			image_path = base_path + '/' + path
+			label = path[len(path) - 5:len(path) - 4]
+			image = Image(image_id = image_id , path = image_path , label = label)
+			images.append(image)
+		print("Imagens carregadas")
+		return images
+
+
+	def get_labels(self , images):
+		labels = []
+		for image in images:
+			labels.append(image.label)
+		return labels
+
+
+"""
 	def load(self):
 		if self.train_base_path:
 			self.train_images = self.load_base_images(self.train_base_path)
@@ -47,21 +74,6 @@ class BaseLoader(object):
 			self.train_labels.append(label)
 		file.close()
 		print("Vetores carregados")
-
-
-	def load_base_images(self , base_path):
-		print("Carregando imagens de " + base_path + " ...")
-		paths = os.listdir(base_path)
-		paths.sort()
-		images = []
-		for path in paths:
-			image_id = path[2:5]
-			image_path = base_path + '/' + path
-			label = path[len(path) - 5:len(path) - 4]
-			image = Image(image_id = image_id , path = image_path , label = label)
-			images.append(image)
-		print("Imagens carregadas")
-		return images
 
 
 	def get_labels(self , images):
@@ -90,3 +102,4 @@ class BaseLoader(object):
 			self.train_vectors = base_features
 		else:
 			self.valid_vectors = base_features
+	"""

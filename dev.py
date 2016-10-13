@@ -1,10 +1,16 @@
 from modules.base.base_loader import BaseLoader
 from modules.machine_learning.classifier import Classifier
 from modules.machine_learning.merge_classifiers import MergeClassifiers
+from modules.base.base_processor import BaseProcessor
 
 
-base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  valid_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
+BaseProcessor().load(images = base.train_images , train = True)
+print()
+BaseProcessor().load(images = base.validation_images , validation = True)
+
+
 X = base.train_vectors
 y = base.train_labels
 
@@ -15,7 +21,7 @@ errors = 0
 fn = 0
 fp = 0
 for index in xrange(0 , len(classes)):
-	if classes[index] == base.valid_labels[index]:
+	if classes[index] == base.validation_labels[index]:
 		corrects += 1
 	else:
 		if classes[index] == 1:
