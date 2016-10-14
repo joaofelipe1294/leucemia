@@ -17,25 +17,27 @@ from modules.utils.file_handler import FileHandler
 X , y = FileHandler().load_vectors_and_labels(train = True)
 X_ , y_ = FileHandler().load_vectors_and_labels(validation = True)
 
-classes = MergeClassifiers(X , y , X_).sum('SVM' , 'ADABOOST' , 'TREE')
-#classes = Classifier(X , y , X_).decision_tree()
+#classes = MergeClassifiers(X , y , X_).sum('KNN')
+classes = Classifier(X , y , X_).decision_tree()
 
 corrects = 0
 errors = 0
-fn = 0
-fp = 0
+false_negative = 0
+false_positive = 0
 for index in xrange(0 , len(classes)):
 	if classes[index] == y_[index]:
 		corrects += 1
 	else:
 		if classes[index] == 1:
-			fn += 1
+			false_negative += 1
 		elif classes[index] == 0:
-			fp += 1
+			false_positive += 1
 		errors += 1
-percentage = (corrects * 100) / len(X_)
+correct_percentage = (corrects * 100) / len(X_)
+false_positive_percentage = (false_positive * 100) / len(X_)
+false_negative_percentage = (false_negative * 100) / len(X_)
 print('+%-15s+%-15s+%-15s+%-15s+' % ('-' * 15 , '-' * 15 , '-' * 15 , '-' * 15))
 print('|%-15s|%-15s|%-15s|%-15s|' % (' ' * 15 , 'PRECISION_%' , 'FALSE_POSITIVE' , 'FALSE_NEGATIVE'))
 print('+%-15s+%-15s+%-15s+%-15s+' % ('-' * 15 , '-' * 15 , '-' * 15 , '-' * 15))
-print('|%-15s|%-15s|%-15s|%-15s|' % ('RESULTS' ,(' ' * 4 ) + str(percentage) , (' ' * 4 ) + str(fp) , (' ' * 4 ) + str(fn)))
+print('|%-15s|%-15s|%-15s|%-15s|' % ('RESULTS' ,(' ' * 4 ) + str(correct_percentage) , (' ' * 4 ) + str(false_positive_percentage) , (' ' * 4 ) + str(false_negative_percentage)))
 print('+%-15s+%-15s+%-15s+%-15s+' % ('-' * 15 , '-' * 15 , '-' * 15 , '-' * 15))
