@@ -17,8 +17,8 @@ from modules.utils.file_handler import FileHandler
 X , y = FileHandler().load_vectors_and_labels(train = True)
 X_ , y_ = FileHandler().load_vectors_and_labels(validation = True)
 
-#classes = MergeClassifiers(X , y , X_).vote('SVM' , 'LDA' , 'TREE')
-classes = Classifier(X , y , X_).lda()
+classes = MergeClassifiers(X , y , X_).sum('SVM' , 'ADABOOST' , 'TREE')
+#classes = Classifier(X , y , X_).decision_tree()
 
 corrects = 0
 errors = 0

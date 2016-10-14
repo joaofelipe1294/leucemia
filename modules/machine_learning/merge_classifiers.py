@@ -26,6 +26,22 @@ class MergeClassifiers(object):
 			raise Exception('Classificador invalido : ' + classifier_name)
 
 
+	def use_classifier_probabilities(self , classifier_name = ''):
+		if classifier_name == 'SVM':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).svm()
+		elif classifier_name == 'LDA':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).lda()
+		elif classifier_name == 'ADABOOST':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).adaptative_boost()
+		elif classifier_name == 'RFOREST':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).random_forest()
+		elif classifier_name == 'KNN':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).knn()
+		elif classifier_name == 'TREE':
+			return Classifier(self.X_train , self.y_train , self.X_valid , probability = True).decision_tree()
+		else:
+			raise Exception('Classificador invalido : ' + classifier_name)
+
 
 	def vote(self , *classifiers):
 		#metodo que aplica fusao de classificadores por meio do voto majoritario
@@ -48,13 +64,19 @@ class MergeClassifiers(object):
 		return classes
 
 
-	def weighted_vote(self , *classifiers_and_weights):
-		#fazer com que os votos de certos classificadores valham mais do que outros
-		classifiers = classifiers_and_weights[:len(classifiers_and_weights) / 2]
-		weights = classifiers_and_weights[len(classifiers_and_weights) / 2:]
-		pass
-
-
-
-MergeClassifiers([] , [] , []).weighted_vote('KNN' , 'SVM' , 'LDA' , 3 , 3, 2)
-
+	def sum(self , *classifiers):
+		predictions = []
+		for classifier_name in classifiers:
+			predictions.append(self.use_classifier_probabilities(classifier_name))
+		classes = []
+		for index in xrange(0 , len(predictions[0])):
+			positive_rate = 0
+			negative_rate = 0
+			for x in xrange(0 , len(predictions)):
+				positive_rate += predictions[x][index][1]
+				negative_rate += predictions[x][index][0]
+			if positive_rate > negative_rate:
+				classes.append(1)
+			elif negative_rate > positive_rate:
+				classes.append(0)
+		return classes
