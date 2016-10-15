@@ -1,9 +1,11 @@
 import cv2
 import math
 import numpy as np
+from contour import Contour
 from image_chanels import ImageChanels
 from filters.otsu_threshold_filter import OtsuThresholdFilter
 from filters.flood_fill_filter import FloodFillFilter
+
 
 class Segmentation(object):
 
@@ -24,7 +26,7 @@ class Segmentation(object):
 		threshold_image = OtsuThresholdFilter().process(saturation)                                          #aplica threshold de OTSU no canal referente a saturacao 
 		flooded_image = FloodFillFilter(threshold_image).flood_borders()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
 		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
-		contour_image = self.get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
+		self.contours , contour_image = Contour().get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
 		self.cell_center , self.cell_radius = self.find_interest_cell()                            #computa o ponto central e o raio da celula de interesse 
 		if len(self.contours) == 0:                                                                     #se o numero de contornos for igual a zero significa que existe apenas um objeto na imagem opened_image logo a mascara ja esta correta
 			self.mask = opened_image
@@ -34,11 +36,11 @@ class Segmentation(object):
 		return segmented_image
 
 
-	def get_contours(self , image):
-		contours_image , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-		cv2.drawContours(contours_image, contours, -1,255, 1)
-		self.contours = contours
-		return contours_image
+	#def get_contours(self , image):
+	#	contours_image , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+	#	cv2.drawContours(contours_image, contours, -1,255, 1)
+	#	self.contours = contours
+	#	return contours_image
 
 
 	def find_interest_cell(self):
