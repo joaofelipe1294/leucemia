@@ -1,7 +1,8 @@
 import cv2
-import numpy as np
-from image_chanels import ImageChanels
 import math
+import numpy as np
+from filters.flood_fill_filter import FloodFillFilter
+from image_chanels import ImageChanels
 
 
 class Segmentation(object):
@@ -21,7 +22,7 @@ class Segmentation(object):
 		#faz a segmentacao da celula de interece   
 		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
 		threshold_image = self.otsu_threshold(saturation)                                          #aplica threshold de OTSU no canal referente a saturacao 
-		flooded_image = self.flood(threshold_image)                                                #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
+		flooded_image = FloodFillFilter(threshold_image).flood_borders()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
 		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
 		contour_image = self.get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
 		self.cell_center , self.cell_radius = self.find_interest_cell()                            #computa o ponto central e o raio da celula de interesse 
@@ -38,44 +39,6 @@ class Segmentation(object):
 		blur_image = cv2.GaussianBlur(image , (5,5) , 0)                                            #borra a imagem aplicando um filtro gaussiano , necessario para que o threshold OTSU funcione
 	   	otsu_image = cv2.threshold(blur_image , 0 , 255 , cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]   #aplica o threshold de otsu na imagem borrada
 	   	return otsu_image
-
-
-   	def flood(self , image , value = 0 , single_seed = None):
-   		#aplica o filtro flood_fill
-		floodfill_image = image.copy()                                                          #cria uma copia da imagem recebida para que a mesma nao seja alterada, uma vez que a funcao cv2.floodFill() altera a imagem recebida como parametro ao inves de retornar uma nova imagem com o filtro aplicado
-		mask = np.zeros((self.height + 2 , self.width + 2) , np.uint8)                          #cria a mascara exigida pela funcao cv2.floodFill()                      
-		if single_seed == None:                                                                 #coloca sementes nas extremidades da imagem
-			seeds = []                                                                          #lista com todas as sementes
-			if self.width == self.height:      
-				for x in xrange(0 , self.width , 5):                                                #definindo as coordenadas das sementes 
-					seeds.append(tuple([0 , x]))
-					seeds.append(tuple([self.height - 5 , x]))
-					seeds.append(tuple([x , 0]))
-					seeds.append(tuple([x , self.width - 5]))
-			else:
-				limit = 0
-				if self.width > self.height:
-					limit = self.height
-				else:
-					limit = self.width
-				for x in xrange(0 , limit , 5):
-					seeds.append(tuple([0 , x]))
-					seeds.append(tuple([self.width - 5 , x]))
-					seeds.append(tuple([x , 0]))
-					seeds.append(tuple([x , self.height - 5]))	
-			for seed in seeds:
-				cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)  #aplica a funcao cv2.floodFill() para cada semente criada
-		else:
-			seed = single_seed
-			cv2.floodFill(floodfill_image , mask , seed , value , loDiff = 2 , upDiff = 2)
-		white = 0 
-		for x in xrange(0,image.shape[0]):                                                      #verifica o numero de px com o valor 255 (branco) apos a aplicacao da funcao cv2.floodFill(), usado futuramente para verificar se houve um erro ou nao 
-			for y in xrange(0,image.shape[1]):
-				if floodfill_image.item(x,y) == 255:
-					white += 1
-		if white > ((image.shape[0] * image.shape[1] * 80) / 100):                              #verifica se mais de 80% da imagem ficou branca, o que claramente indica um erro tendo em vista que nenhuma celula ocupa esse tamanho na imagem, caso isso seja verdade invertese a imagem 
-			floodfill_image = cv2.bitwise_not(floodfill_image)
-		return floodfill_image
 
 
 	def get_contours(self , image):
@@ -105,7 +68,7 @@ class Segmentation(object):
 
 	def remove_noise_objects(self , contours_image , threshold_image):
 		#metodo com o objetivo de remover qualquer objeto da imagem que nao seja a celula de interesse
-		flooded_image = self.flood(contours_image.copy() , 255 , single_seed = self.cell_center)   #preenche a celula central 
+		flooded_image = FloodFillFilter(contours_image).flood_region(self.cell_center , value = 255)   #preenche a celula central 
 		for contour in self.contours:                                                              #varre todos os contornos e verifica se a celula possui o nucleo vazado , nesse caso ocorre uma excecao que sera corrigida mais pra frente
 			(x,y) , object_radius = cv2.minEnclosingCircle(contour)                                #computa o raio e o ponto central do contorno
 			object_radius = int(object_radius)                                                     #normaliza o tipo de dado  

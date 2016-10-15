@@ -5,11 +5,11 @@ from modules.base.base_processor import BaseProcessor
 from modules.utils.file_handler import FileHandler
 
 
-#base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
-#base.load()
-#BaseProcessor().load(images = base.train_images , train = True)
-#print()
-#BaseProcessor().load(images = base.validation_images , validation = True)
+base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base.load()
+BaseProcessor().load(images = base.train_images , train = True)
+print()
+BaseProcessor().load(images = base.validation_images , validation = True)
 
 
 #X = base.train_vectors
@@ -18,7 +18,7 @@ X , y = FileHandler().load_vectors_and_labels(train = True)
 X_ , y_ = FileHandler().load_vectors_and_labels(validation = True)
 
 #classes = MergeClassifiers(X , y , X_).sum('KNN')
-classes = Classifier(X , y , X_).decision_tree()
+classes = Classifier(X , y , X_).svm()
 
 corrects = 0
 errors = 0
