@@ -1,9 +1,9 @@
 import cv2
 import math
 import numpy as np
-from filters.flood_fill_filter import FloodFillFilter
 from image_chanels import ImageChanels
-
+from filters.otsu_threshold_filter import OtsuThresholdFilter
+from filters.flood_fill_filter import FloodFillFilter
 
 class Segmentation(object):
 
@@ -21,7 +21,7 @@ class Segmentation(object):
 	def process(self):                                      
 		#faz a segmentacao da celula de interece   
 		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
-		threshold_image = self.otsu_threshold(saturation)                                          #aplica threshold de OTSU no canal referente a saturacao 
+		threshold_image = OtsuThresholdFilter().process(saturation)                                          #aplica threshold de OTSU no canal referente a saturacao 
 		flooded_image = FloodFillFilter(threshold_image).flood_borders()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
 		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
 		contour_image = self.get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
@@ -32,13 +32,6 @@ class Segmentation(object):
 			self.mask = self.remove_noise_objects(contour_image , threshold_image)
 		segmented_image = self.build_mask()
 		return segmented_image
-
-
-	def otsu_threshold(self , image):
-		#aplica o threshold baseado na tecnica de OTSU
-		blur_image = cv2.GaussianBlur(image , (5,5) , 0)                                            #borra a imagem aplicando um filtro gaussiano , necessario para que o threshold OTSU funcione
-	   	otsu_image = cv2.threshold(blur_image , 0 , 255 , cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]   #aplica o threshold de otsu na imagem borrada
-	   	return otsu_image
 
 
 	def get_contours(self , image):
