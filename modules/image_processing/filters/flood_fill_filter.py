@@ -15,22 +15,22 @@ class FloodFillFilter(object):
 		floodfill_image = self.image.copy()                                                          #cria uma copia da imagem recebida para que a mesma nao seja alterada, uma vez que a funcao cv2.floodFill() altera a imagem recebida como parametro ao inves de retornar uma nova imagem com o filtro aplicado
 		seeds = []                                                                          #lista com todas as sementes
 		if self.width == self.height:      
-			for x in xrange(0 , self.width , 5):                                                #definindo as coordenadas das sementes 
+			for x in xrange(0 , self.width , 1):                                                #definindo as coordenadas das sementes 
 				seeds.append(tuple([0 , x]))
-				seeds.append(tuple([self.height - 5 , x]))
+				seeds.append(tuple([self.height - 1 , x]))
 				seeds.append(tuple([x , 0]))
-				seeds.append(tuple([x , self.width - 5]))
+				seeds.append(tuple([x , self.width - 1]))
 		else:
 			limit = 0
 			if self.width > self.height:
 				limit = self.height
 			else:
 				limit = self.width
-			for x in xrange(0 , limit , 5):
+			for x in xrange(0 , limit , 1):
 				seeds.append(tuple([0 , x]))
-				seeds.append(tuple([self.width - 5 , x]))
+				seeds.append(tuple([self.width - 1 , x]))
 				seeds.append(tuple([x , 0]))
-				seeds.append(tuple([x , self.height - 5]))	
+				seeds.append(tuple([x , self.height - 1]))	
 		for seed in seeds:
 			cv2.floodFill(floodfill_image , self.mask , seed , value , loDiff = 2 , upDiff = 2)  #aplica a funcao cv2.floodFill() para cada semente criada
 		return self.valid_resut(floodfill_image)

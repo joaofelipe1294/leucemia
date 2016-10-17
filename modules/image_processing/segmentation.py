@@ -36,13 +36,6 @@ class Segmentation(object):
 		return segmented_image
 
 
-	#def get_contours(self , image):
-	#	contours_image , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-	#	cv2.drawContours(contours_image, contours, -1,255, 1)
-	#	self.contours = contours
-	#	return contours_image
-
-
 	def find_interest_cell(self):
 		#recebe os contornos de uma imagem e com base neles retorna o ponto central e o raio da celula de interesse , alem de uma lista com os contornos referente apenas a objetos que nao sejam a celula de interesse. A celula de interesse eh aquela que possui uma menor distancia Euclidiana de seu ponto central em relacao ao ponto central da imagem
 		image_center_point = tuple([int(self.height / 2) , int(self.width) / 2])               #descobre o ponto central da imagem
