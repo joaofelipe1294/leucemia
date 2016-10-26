@@ -7,6 +7,7 @@ from filters.otsu_threshold_filter import OtsuThresholdFilter
 from filters.flood_fill_filter import FloodFillFilter
 from _filters import OtsuThreshold
 from _filters import RegionGrowing
+from _filters import FloodBorders
 
 
 
@@ -27,7 +28,8 @@ class Segmentation(object):
 		#faz a segmentacao da celula de interece   
 		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
 		threshold_image = OtsuThreshold(saturation).process()									   #aplica threshold de OTSU no canal referente a saturacao 
-		flooded_image = FloodFillFilter(threshold_image).flood_borders()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
+		#flooded_image = FloodFillFilter(threshold_image).flood_borders()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
+		flooded_image = FloodBorders(threshold_image).process()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
 		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((5,5) , np.uint8))  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
 		self.contours , contour_image = Contour().get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
 		self.cell_center , self.cell_radius = self.find_interest_cell()                            #computa o ponto central e o raio da celula de interesse 
