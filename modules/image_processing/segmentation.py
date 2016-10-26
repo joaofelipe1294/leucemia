@@ -3,11 +3,9 @@ import math
 import numpy as np
 from contour import Contour
 from image_chanels import ImageChanels
-from filters.otsu_threshold_filter import OtsuThresholdFilter
-from filters.flood_fill_filter import FloodFillFilter
-from _filters import OtsuThreshold
-from _filters import RegionGrowing
-from _filters import FloodBorders
+from filters import OtsuThreshold
+from filters import RegionGrowing
+from filters import FloodBorders
 
 
 
