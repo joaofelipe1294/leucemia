@@ -6,6 +6,7 @@ from image_chanels import ImageChanels
 from filters.otsu_threshold_filter import OtsuThresholdFilter
 from filters.flood_fill_filter import FloodFillFilter
 from _filters import OtsuThreshold
+from _filters import RegionGrowing
 
 
 
@@ -58,7 +59,7 @@ class Segmentation(object):
 
 	def remove_noise_objects(self , contours_image , threshold_image):
 		#metodo com o objetivo de remover qualquer objeto da imagem que nao seja a celula de interesse
-		flooded_image = FloodFillFilter(contours_image).flood_region(self.cell_center , value = 255)   #preenche a celula central 
+		flooded_image = RegionGrowing(contours_image , seed = self.cell_center , value = 255).process()      #preenche a celula central 
 		for contour in self.contours:                                                              #varre todos os contornos e verifica se a celula possui o nucleo vazado , nesse caso ocorre uma excecao que sera corrigida mais pra frente
 			(x,y) , object_radius = cv2.minEnclosingCircle(contour)                                #computa o raio e o ponto central do contorno
 			object_radius = int(object_radius)                                                     #normaliza o tipo de dado  
