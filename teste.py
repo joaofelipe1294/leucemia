@@ -3,15 +3,13 @@ import math
 import numpy as np
 from modules.base.base_loader import BaseLoader
 from modules.image_processing.image_chanels import ImageChanels
-from modules.image_processing.filters.otsu_threshold_filter import OtsuThresholdFilter
-from modules.image_processing.filters.flood_fill_filter import FloodFillFilter
-
+from modules.image_processing.filters import *
 
 
 def process(image_path):
 	img = cv2.imread(image_path)
 	gray_image = cv2.imread(image_path , 0)
-	gray_flooded = FloodFillFilter(gray_image).flood_borders()
+	gray_flooded = FloodBorders(gray_image).process()
  	binary_flooded = cv2.threshold(gray_flooded,127,255,cv2.THRESH_BINARY)[1]
  	h , s = ImageChanels(img).hsv()[:2]	
  	#binary_s = OtsuThresholdFilter().process(s)
@@ -22,10 +20,10 @@ def process(image_path):
 	result = cv2.bitwise_and(median_s , median_h)
 	erode = cv2.erode(result,np.ones((3,3) , np.uint8),iterations = 1)
 	closing = cv2.morphologyEx(result, cv2.MORPH_OPEN, np.ones((3,3) , np.uint8))
-	flooded_image = FloodFillFilter(closing).flood_borders()
+	flooded_image = FloodBorders(closing).process()
 	#opening = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, np.ones((3,3) , np.uint8))
 	and_image = cv2.bitwise_and(gray_flooded , closing)
-	otsu = OtsuThresholdFilter().process(and_image)
+	otsu = OtsuThreshold(and_image).process()
 
 	"""
 	contour_image, contours, hierarchy = cv2.findContours(flooded_image.copy() , cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
