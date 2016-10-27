@@ -4,8 +4,26 @@ from modules.base.base_loader import BaseLoader
 from modules.image_processing.image_chanels import ImageChanels
 from modules.image_processing.filters import OtsuThreshold
 from modules.image_processing.filters import FloodBorders
+from modules.image_processing.contour import Contour
+from modules.image_processing.filters import RegionGrowing
 
-base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+
+
+def contour_area(contours):
+	if len(contours) == 1:
+		return cv2.contourArea(contours[0])
+	else:
+		total_area = 0
+		for contour in contours:
+		 	total_area += cv2.contourArea(contour)
+		return total_area
+
+			
+
+
+
+#base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base = BaseLoader(train_base_path = 'bases/Teste_ALL_IDB2/ALL' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 #process(base.train_images[0].path)
 
@@ -34,15 +52,41 @@ for image in base.train_images:
 	binary_s = OtsuThreshold(s).process()
 	flooded_h = FloodBorders(binary_h , value = 0).process()
 	flooded_s = FloodBorders(binary_s , value = 0).process()
+	h_ctns , h_ctns_image = Contour().get_contours(flooded_h)
+	s_ctns , s_ctns_image = Contour().get_contours(flooded_s)
+	h_rg = RegionGrowing(h_ctns_image , seed = (int(h.shape[0] / 2) , int(h.shape[1] / 2)) , value = 255).process()
+	s_rg = RegionGrowing(s_ctns_image , seed = (int(h.shape[0] / 2) , int(h.shape[1] / 2)) , value = 255).process()
+	h_opening = cv2.morphologyEx(h_rg, cv2.MORPH_OPEN, kernel)
+	s_opening = cv2.morphologyEx(s_rg, cv2.MORPH_OPEN, kernel)
+	h_opening = cv2.threshold(h_opening,127,255,cv2.THRESH_BINARY)[1]
+	s_opening = cv2.threshold(s_opening,127,255,cv2.THRESH_BINARY)[1]
+	h_ctns , h_ctns_image = Contour().get_contours(h_opening)
+	s_ctns , s_ctns_image = Contour().get_contours(s_opening)
+	h_area = contour_area(h_ctns)
+	s_area = contour_area(s_ctns)
+	print('H_AREA : ' + str(h_area))
+	print('S_AREA : ' + str(s_area))
+	new_mask = np.array((0,0))
+	if h_area > s_area:
+		new_mask = cv2.threshold(h_opening,127,1,cv2.THRESH_BINARY)[1]
+	else:
+		new_mask = cv2.threshold(s_opening,127,1,cv2.THRESH_BINARY)[1]
+	mask = cv2.merge((new_mask , new_mask , new_mask))
+	result_processes = rgb_image * mask
+	
+	cv2.imshow('result' , result_processes)
+	cv2.waitKey(300)
 	#cv2.imshow('result' , result)
 	#cv2.imshow('gray' , gray_image)
 	#cv2.imshow('flooded' , flooded_image)
-	cv2.imshow('flooded_h' , flooded_h)
-	cv2.imshow('flooded_s' , flooded_s)
+	#cv2.imshow('flooded_h' , flooded_h)
+	#cv2.imshow('flooded_s' , flooded_s)
+	#cv2.imshow('h_open' , h_ctns_image)
+	#cv2.imshow('s_open' , s_ctns_image)
 	#cv2.imshow('original' , rgb_image)
 	#cv2.imshow('saturation' , binary_s)
 	#cv2.imshow('hue' , binary_h)
-	cv2.waitKey(0)
+	#cv2.waitKey(0)
 
 
 
