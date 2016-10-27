@@ -24,11 +24,44 @@ for image in base.train_images:
 	for x in xrange(0,not_image.shape[0]):
 		for y in xrange(0,not_image.shape[1]):
 			if not_image.item(x,y) < 200:
-				not_image.itemset(x,y,0)
-			else:
 				not_image.itemset(x,y,1)
+			else:
+				not_image.itemset(x,y,0)
 	mask = cv2.merge((not_image , not_image , not_image))
 	result = rgb_image * mask
+	h , s , v = ImageChanels(result).hsv(display = False)
+	binary_h = OtsuThreshold(h).process()
+	binary_s = OtsuThreshold(s).process()
+	flooded_h = FloodBorders(binary_h , value = 0).process()
+	flooded_s = FloodBorders(binary_s , value = 0).process()
+	#cv2.imshow('result' , result)
+	#cv2.imshow('gray' , gray_image)
+	#cv2.imshow('flooded' , flooded_image)
+	cv2.imshow('flooded_h' , flooded_h)
+	cv2.imshow('flooded_s' , flooded_s)
+	#cv2.imshow('original' , rgb_image)
+	#cv2.imshow('saturation' , binary_s)
+	#cv2.imshow('hue' , binary_h)
+	cv2.waitKey(0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	"""
 	r , g , b = ImageChanels(result).rgb()
 	h , s , v = ImageChanels(result).hsv()
 	
@@ -42,15 +75,14 @@ for image in base.train_images:
 			vv = v.item(x, y)
 			if bv != 0 or gv != 0 or rv != 0 or hv != 0 or sv != 0 or vv != 0:
 				file.write(str(bv) + ',' + str(gv) + ',' + str(rv) + ',' + str(hv) + ',' + str(sv) + ',' + str(vv) + '\n')
-	print('processed ' + image.path)
+	print('processed ' + image.path)"""
 	
 	#cv2.imshow('closing' , closing)
 	#cv2.imshow('sum' , sum_img)
 	#cv2.imshow('sth' , s_th)
 	#cv2.imshow('th' , th)
 	#cv2.imshow('original' , rgb_image)
-	#cv2.imshow('result' , result)
-	#cv2.waitKey(300)
+	
 file.close()
 
 
