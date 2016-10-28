@@ -25,7 +25,7 @@ class ImageChanels(object):
 			if display:
 				cv2.imshow('chanel' , color_chanel)
 				cv2.waitKey(0)
-			return color_chanels
+			return color_chanel
 		else:
 			blue_chanel , green_chanel , red_chanel = cv2.split(self.rgb_image)
 			if display:
