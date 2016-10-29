@@ -8,9 +8,9 @@ from abc import ABCMeta , abstractmethod
 
 class Filter(object):
 	"""	
-		classe usada como base para todas as demais classes que servem para aplicar um filtro em uma imagem , 
-		os atributos particulares de cada filtro devem ser recebidos no contrutor das classes que herdam de 
-		Filter	
+		classe bastrata usada como base para todas as demais classes que servem para aplicar um filtro em 
+		uma imagem , os atributos particulares de cada filtro devem ser recebidos no contrutor das classes
+		que herdam de Filter	
 	"""
 
 
