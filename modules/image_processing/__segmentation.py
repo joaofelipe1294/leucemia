@@ -5,7 +5,6 @@ from modules.base.base_loader import BaseLoader
 from modules.image_processing.image_chanels import ImageChanels
 from modules.image_processing.filters import OtsuThreshold
 from modules.image_processing.filters import FloodBorders
-from modules.image_processing.contour import Contour
 from modules.image_processing.filters import RegionGrowing
 
 
@@ -37,6 +36,15 @@ class __Segmentation(object):
 		self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))   #kernel circular usado para operacao de abertura     
 
 
+	@abstractmethod
+	def process(self): 
+		"""
+			define o metodo abstrato que todas as classes filha devem implementar, esse metodo deve retornar a
+		 	imagem resultante da aplicacao do pipiline que segmenta a imagem  
+		"""
+		pass	
+
+
 	def get_erythrocytes(self):
 		"""
 			extrai as hemacias de uma imagem RGB , o retorno eh uma imagem preta com apenas as hemacias em branco 
@@ -63,7 +71,7 @@ class __Segmentation(object):
 		"""
 		binary_image = OtsuThreshold(image).process()                        	#binariza o canal da matiz , a binarizacao da saturacao tende a expor a celula como um todo , mas normalmente possui muitos ruidos 
 		flooded_image = FloodBorders(binary_image , value = 0).process()        #inunda as bordas da matiz_binaria para remover os objetos presentes nas bordas
-		contours , contours_image = Contour().get_contours(flooded_image)       #pega os contornos da matiz inundada
+		contours , contours_image = self.get_contours(flooded_image)       #pega os contornos da matiz inundada
 		filled_cell = RegionGrowing(contours_image , seed = (int(self.rgb_image.shape[0] / 2) , int(self.rgb_image.shape[1] / 2)) , value = 255).process() 	#aplica crescimento de recioes no ponto central da imagem , uma vez que a celula de interesse tende a ficar no centro da imagem , assim destadando a celula central das demais
 		interest_cell = cv2.morphologyEx(filled_cell, cv2.MORPH_OPEN, self.kernel)            #aplica operacao de abertura para remover os contornos deixando apenas a celula central que estava inundada
 		clean_interest_cell = cv2.threshold(interest_cell,127,255,cv2.THRESH_BINARY)[1]  #aplica um threshold com o objetivo de remover valores que nao sejam pequenos desaparecam
@@ -76,7 +84,7 @@ class __Segmentation(object):
 			parametros
 				@binary_image - imagem binaria , essa imagem deve ser binaria para que os contornos sejam extraidos facilmente 
 		"""
-		contours , contours_image = Contour().get_contours(binary_image)     #pega os contronos da celula recebida como parametro
+		contours , contours_image = self.get_contours(binary_image)     #pega os contronos da celula recebida como parametro
 		if len(contours) == 1:                       #verifica se existe mais de um contorno
 			return cv2.contourArea(contours[0])      #caso exista apenas um contorno retorna sua area
 		else:                                        #senao itera sobre todos os contornos do array de contornos somando suas areas
@@ -100,13 +108,17 @@ class __Segmentation(object):
 		return result
 
 
-	@abstractmethod
-	def process(self): 
+	def get_contours(self , image):
+		""""
+			metodo usado para pegar os contornos de uma imagem , deve receber uma imagem binaria como parametro
+			tem como objetivo retornar uma lista com as posicoes dos contornos (e o numero de contornos) e uma 
+			imagem preta com os contornos desenhados em branco
+			parametros 
+				@image - imagem binaria que tera seus contornos extraidos
 		"""
-			define o metodo abstrato que todas as classes filha devem implementar, esse metodo deve retornar a
-		 	imagem resultante da aplicacao do pipiline que segmenta a imagem  
-		"""
-		pass	
+		contours_image , contours, hierarchy = cv2.findContours(image.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) #metodo usado para recuperar os contornos de uma imagem binaria
+		cv2.drawContours(contours_image, contours, -1,255, 1)  #desenha os contornos na imagem retornada pelo metodo cv2.findContours
+		return contours , contours_image
 
 
 ##################################################################################################################
@@ -152,3 +164,6 @@ class ErythrocytesRemoval(__Segmentation):
 			mask = saturation_cell
 		segmented_image = self.apply_mask(self.rgb_image , mask)   #aplica a mascara na imagem original , assim segmentando a celula central 
 		return segmented_image
+
+
+##################################################################################################################
