@@ -3,7 +3,6 @@ import os
 import sys
 from modules.utils.progress_bar import ProgressBar
 from modules.models.image import Image
-from modules.image_processing.segmentation import Segmentation
 from modules.features.feature_extractor import FeatureExtractor
 
 
