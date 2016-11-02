@@ -1,20 +1,21 @@
 from modules.utils.progress_bar import ProgressBar
-from modules.image_processing.segmentation import Segmentation
+from modules.image_processing.segmentation import FirstSegmentation
+from modules.image_processing.segmentation import ErythrocytesRemoval
 from modules.features.feature_extractor import FeatureExtractor
 
 
 class BaseProcessor:
 
 	def __init__(self):
-		self.train_file = 'train_data.txt'
-		self.validation_file = 'validation_data.txt'
+		self.train_file = 'caracteristics_files/train_data.txt'
+		self.validation_file = 'caracteristics_files/validation_data.txt'
 
 
 	def load(self , images = None , train = False , validation = False):
 		base_features = []
 		iteration = 0
 		for image in images:
-			segmented_image = Segmentation(image.path).process()
+			segmented_image = FirstSegmentation(image.path).process()
 			area , perimeter , excess , average = FeatureExtractor(segmented_image).get_features()
 			base_features.append([area , perimeter , excess])
 			iteration += 1

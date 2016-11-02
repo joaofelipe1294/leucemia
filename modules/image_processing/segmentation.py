@@ -38,7 +38,7 @@ class Segmentation(object):
 
 
 	@abstractmethod
-	def process(self): 
+	def process(self , display = False): 
 		"""
 			define o metodo abstrato que todas as classes filha devem implementar, esse metodo deve retornar a
 		 	imagem resultante da aplicacao do pipiline que segmenta a imagem  
@@ -169,6 +169,11 @@ class Segmentation(object):
 		return opened_image
 
 
+	def display_segmented_image(self , segmented_image):
+		cv2.imshow('segmented' , segmented_image)
+		cv2.waitKey(200)
+
+
 ##################################################################################################################
 
 
@@ -196,7 +201,7 @@ class ErythrocytesRemoval(Segmentation):
 		super(ErythrocytesRemoval , self).__init__(image_path = image_path)
 
 
-	def process(self):
+	def process(self , display = False):
 		erythrocytes = self.get_erythrocytes()                      #extrai as hemacias 
 		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)           #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
 		erythrocytes_free = self.apply_mask(self.rgb_image , erythrocytes_inverted)
@@ -211,6 +216,8 @@ class ErythrocytesRemoval(Segmentation):
 		else:                             #caso contrario a SATURACAO eh usada como mascara
 			mask = saturation_cell
 		segmented_image = self.apply_mask(self.rgb_image , mask)   #aplica a mascara na imagem original , assim segmentando a celula central 
+		if display:
+			self.display_segmented_image(segmented_image)
 		return segmented_image
 
 
@@ -226,7 +233,7 @@ class FirstSegmentation(Segmentation):
 		super(FirstSegmentation , self).__init__(image_path = image_path)
 
 
-	def process(self):                                      
+	def process(self , display = False):                                      
 		#faz a segmentacao da celula de interece   
 		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
 		threshold_image = OtsuThreshold(saturation).process()									   #aplica threshold de OTSU no canal referente a saturacao 
@@ -240,6 +247,8 @@ class FirstSegmentation(Segmentation):
 		else:
 			mask = self.remove_noise_objects(contour_image , threshold_image , cell_center = cell_center , cell_radius = cell_radius , contours = contours)
 		segmented_image = self.apply_mask(self.rgb_image , mask)
+		if display:
+			self.display_segmented_image(segmented_image)
 		return segmented_image
 
 

@@ -1,8 +1,8 @@
 class FileHandler:
 
 	def __init__(self):
-		self.train_file = 'train_data.txt'
-		self.validation_file = 'validation_data.txt'
+		self.train_file = 'caracteristics_files/train_data.txt'
+		self.validation_file = 'caracteristics_files/validation_data.txt'
 
 
 	def load_vectors_and_labels(self , train = False , validation = False):
