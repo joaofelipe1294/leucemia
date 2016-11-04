@@ -269,6 +269,13 @@ class FirstSegmentation(Segmentation):
 
 
 class Homogenization(Segmentation):
+	"""
+		o diferencial desse metodo de segmentacao eh que ele usa a homogenizacao da imagem RGB a partir da funcao 
+		cv2.pyrMeanShiftFiltering() ,com a imagem mais "comportada" fica mais facil de extrair o fundo da imagem ,
+		isso combinado ao metodo que extrai as hemacias apresentou um resultado satisfatorio ate certo ponto. 11%
+		das imagens tiveram perdas significativas ,2% tiveram perda total e 87% tiveram bins resultados
+	"""
+
 
 
 	def __init__(self , image_path):
