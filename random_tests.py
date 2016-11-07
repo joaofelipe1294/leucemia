@@ -57,7 +57,34 @@ def apply_rgb_mask(rgb_image , mask_image):
 		return result
 
 
-mask_267 = np.zeros((257 , 257) , np.uint8)
+
+def mask_builder(image , kernel):
+	kernel_ray = int(kernel / 2)                    #raio do kernel
+	mask = np.zeros((image.shape[:2]) , np.uint8)   #criei mascara
+	seeds = []
+	for x in xrange(kernel_ray , image.shape[1] , kernel * 2):   #vai de metade do kernel , ate o limite da largura da imagem , de 2 vezes o kernel por vez para criar um espaco esntre os blocos
+		top_seed = tuple([kernel_ray, x])
+		bottom_seed = tuple([image.shape[0] - kernel_ray , x])
+		left_seed = tuple([x , kernel_ray])
+		right_seed = tuple([x , image.shape[1] - kernel_ray])
+		if x + kernel_ray < image.shape[1]:
+			seeds.append(top_seed)
+			seeds.append(bottom_seed)
+			seeds.append(left_seed)
+			seeds.append(right_seed)
+		for seed in seeds:
+			for x in xrange(seed[0] - kernel_ray, seed[0] + kernel_ray):
+				for y in xrange(seed[1] - kernel_ray , seed[1] + kernel_ray):
+					mask.itemset((x , y) , 255)
+	print(seeds)
+	cv2.imshow('mask' , mask)
+	cv2.waitKey(0)
+
+
+rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
+mask_builder(rgb_image , 30)
+
+'''mask_267 = np.zeros((257 , 257) , np.uint8)
 set_pxs(mask_267 , (15 , 15) , 30)
 set_pxs(mask_267 , (15 , 75) , 30)
 set_pxs(mask_267 , (15 , 135) , 30)
@@ -91,7 +118,7 @@ cv2.imshow('mask' , mask_267)
 cv2.imshow('hemacias' , erythrocytes_rgb)
 cv2.imshow('result' , erythrocytes_rgb * mask)
 cv2.waitKey(0)
-
+'''
 
 '''
 base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
