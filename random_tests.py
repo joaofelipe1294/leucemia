@@ -61,7 +61,7 @@ def apply_rgb_mask(rgb_image , mask_image):
 def mask_builder(image , kernel):
 	kernel_ray = int(kernel / 2)                    #raio do kernel
 	mask = np.zeros((image.shape[:2]) , np.uint8)   #criei mascara
-	seeds = []
+	seeds = []     #lista que contem todas as coordenadas usadas como semente
 	for x in xrange(kernel_ray , image.shape[1] , kernel * 2):   #vai de metade do kernel , ate o limite da largura da imagem , de 2 vezes o kernel por vez para criar um espaco esntre os blocos
 		top_seed = tuple([kernel_ray, x])
 		bottom_seed = tuple([image.shape[0] - kernel_ray , x])
@@ -75,59 +75,48 @@ def mask_builder(image , kernel):
 		for seed in seeds:
 			for x in xrange(seed[0] - kernel_ray, seed[0] + kernel_ray):
 				for y in xrange(seed[1] - kernel_ray , seed[1] + kernel_ray):
-					mask.itemset((x , y) , 255)
-	print(seeds)
-	cv2.imshow('mask' , mask)
-	cv2.waitKey(0)
+					mask.itemset((x , y) , 1)
+	return mask
 
 
-rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
-mask_builder(rgb_image , 30)
-
-'''mask_267 = np.zeros((257 , 257) , np.uint8)
-set_pxs(mask_267 , (15 , 15) , 30)
-set_pxs(mask_267 , (15 , 75) , 30)
-set_pxs(mask_267 , (15 , 135) , 30)
-set_pxs(mask_267 , (15 , 195) , 30)
-set_pxs(mask_267 , (15 , 240) , 30)
-
-set_pxs(mask_267 , (75 , 15) , 30)
-set_pxs(mask_267 , (135 , 15) , 30)
-set_pxs(mask_267 , (195 , 15) , 30)
-set_pxs(mask_267 , (240 , 15) , 30)
-
-set_pxs(mask_267 , (75 , 240) , 30)
-set_pxs(mask_267 , (135 , 240) , 30)
-set_pxs(mask_267 , (195 , 240) , 30)
-set_pxs(mask_267 , (240 , 240) , 30)
-
-set_pxs(mask_267 , (240 , 75) , 30)
-set_pxs(mask_267 , (240 , 135) , 30)
-set_pxs(mask_267 , (240 , 195) , 30)
+def get_herythocytes_pxs(rgb_image):
+	mask = mask_builder(rgb_image , 30)
+	mask = cv2.merge((mask , mask , mask))
+	erythrocytes = get_erythocytes(rgb_image)
+	erythrocytes_rgb = apply_rgb_mask(rgb_image , erythrocytes)
+	return erythrocytes_rgb * mask
 
 
 
-mask = cv2.merge((mask_267 , mask_267 , mask_267))
+
 rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
 erythrocytes = get_erythocytes(rgb_image)
-erythrocytes_rgb = apply_rgb_mask(rgb_image , erythrocytes)
-
-
-#print(mask_267)
-cv2.imshow('mask' , mask_267)
-cv2.imshow('hemacias' , erythrocytes_rgb)
-cv2.imshow('result' , erythrocytes_rgb * mask)
+inverted_erythrocytes = cv2.bitwise_not(erythrocytes)
+erythrocytes_rgb = apply_rgb_mask(rgb_image , inverted_erythrocytes)
+s = ImageChanels(erythrocytes_rgb).hsv('S')
+otsu = OtsuThreshold(s).process()
+otsu_not = cv2.bitwise_not(otsu)
+free_center = apply_rgb_mask(erythrocytes_rgb , otsu_not)
+mask = mask_builder(free_center , 30)
+mask = cv2.merge((mask , mask , mask))
+cv2.imshow('mask' , free_center * mask)
 cv2.waitKey(0)
-'''
+
 
 '''
-base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base = BaseLoader(train_base_path = 'bases/ALL' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 for image in base.train_images:
 	rgb_image = cv2.imread(image.path)
 	erythrocytes = get_erythocytes(rgb_image)
-	erythrocytes_rgb = apply_rgb_mask(rgb_image , erythrocytes)
-	cv2.imshow('hemacias' , erythrocytes_rgb)
+	inverted_erythrocytes = cv2.bitwise_not(erythrocytes)
+	erythrocytes_rgb = apply_rgb_mask(rgb_image , inverted_erythrocytes)
+	s = ImageChanels(erythrocytes_rgb).hsv('S')
+	otsu = OtsuThreshold(s).process()
+	otsu_not = cv2.bitwise_not(otsu)
+	free_center = apply_rgb_mask(erythrocytes_rgb , otsu_not)
+	cv2.imshow('free_center' , free_center)
 	cv2.imshow('original' , rgb_image)
 	cv2.waitKey(0)
 '''
+
