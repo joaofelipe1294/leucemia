@@ -4,31 +4,29 @@ from modules.base.base_loader import BaseLoader
 from modules.image_processing.image_chanels import ImageChanels
 from modules.image_processing.filters import OtsuThreshold
 
+"""
+LABELS
+	0 - center
+	1 - hemacias
+	2 - fundo
+"""
 
-def get_pxs(rgb_image , seed , kernel_size):
+
+
+
+def get_pxs(rgb_image , kernel_size):
 	'''metodo que pega os pixels centrais da imagem , ate o momento seta novos valores pra teste nos pixels alvo 
 	kernel_size = 31
 	seed = tuple([int(rgb_image.shape[0] / 2) , int(rgb_image.shape[1] / 2)])
 	'''
 	kernel_ray = int(kernel_size / 2)
-	for x in xrange(seed[0] - kernel_ray, seed[0] + kernel_ray):
-		for y in xrange(seed[1] - kernel_ray , seed[1] + kernel_ray):
-			rgb_image.itemset((x , y , 0) , 255)
-			rgb_image.itemset((x , y , 1) , 255)
-			rgb_image.itemset((x , y , 2) , 255)
-
-def set_pxs(gray_image , seed , kernel_size):
-	'''metodo que pega os pixels centrais da imagem , ate o momento seta novos valores pra teste nos pixels alvo 
-	kernel_size = 31
-	seed = tuple([int(rgb_image.shape[0] / 2) , int(rgb_image.shape[1] / 2)])
-	'''
-	kernel_ray = int(kernel_size / 2)
-	for x in xrange(seed[0] - kernel_ray, seed[0] + kernel_ray):
-		for y in xrange(seed[1] - kernel_ray , seed[1] + kernel_ray):
-			gray_image.itemset((x , y) , 1)
-			gray_image.itemset((x , y) , 1)
-			gray_image.itemset((x , y) , 1)
-
+	mask = np.zeros((rgb_image.shape[:2]) , np.uint8)
+	image_center = tuple([int(rgb_image.shape[0] / 2) , int(rgb_image.shape[1] / 2)])
+	for x in xrange(image_center[0] - kernel_ray , image_center[0] + kernel_ray):
+		for y in xrange(image_center[1] - kernel_ray , image_center[1] + kernel_ray):
+			mask.itemset((x , y) , 1)
+	mask = cv2.merge((mask , mask , mask))
+	return rgb_image * mask
 
 
 def get_erythocytes(rgb_image):
@@ -79,8 +77,8 @@ def mask_builder(image , kernel):
 	return mask
 
 
-def get_herythocytes_pxs(rgb_image):
-	mask = mask_builder(rgb_image , 30)
+def get_herythocytes_pxs(rgb_image , kernel):
+	mask = mask_builder(rgb_image , kernel)
 	mask = cv2.merge((mask , mask , mask))
 	erythrocytes = get_erythocytes(rgb_image)
 	erythrocytes_rgb = apply_rgb_mask(rgb_image , erythrocytes)
@@ -88,26 +86,7 @@ def get_herythocytes_pxs(rgb_image):
 
 
 
-
-rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
-erythrocytes = get_erythocytes(rgb_image)
-inverted_erythrocytes = cv2.bitwise_not(erythrocytes)
-erythrocytes_rgb = apply_rgb_mask(rgb_image , inverted_erythrocytes)
-s = ImageChanels(erythrocytes_rgb).hsv('S')
-otsu = OtsuThreshold(s).process()
-otsu_not = cv2.bitwise_not(otsu)
-free_center = apply_rgb_mask(erythrocytes_rgb , otsu_not)
-mask = mask_builder(free_center , 30)
-mask = cv2.merge((mask , mask , mask))
-cv2.imshow('mask' , free_center * mask)
-cv2.waitKey(0)
-
-
-'''
-base = BaseLoader(train_base_path = 'bases/ALL' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
-base.load()
-for image in base.train_images:
-	rgb_image = cv2.imread(image.path)
+def get_background_pxs(rgb_image , kernel):
 	erythrocytes = get_erythocytes(rgb_image)
 	inverted_erythrocytes = cv2.bitwise_not(erythrocytes)
 	erythrocytes_rgb = apply_rgb_mask(rgb_image , inverted_erythrocytes)
@@ -115,8 +94,63 @@ for image in base.train_images:
 	otsu = OtsuThreshold(s).process()
 	otsu_not = cv2.bitwise_not(otsu)
 	free_center = apply_rgb_mask(erythrocytes_rgb , otsu_not)
-	cv2.imshow('free_center' , free_center)
-	cv2.imshow('original' , rgb_image)
-	cv2.waitKey(0)
-'''
+	mask = mask_builder(free_center , kernel)
+	mask = cv2.merge((mask , mask , mask))
+	return free_center * mask
 
+
+
+def get_valid_values(rgb_image , label):
+	valid_values = []
+	hsv_center = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
+	for x in xrange(0 , rgb_image.shape[0]):
+		for y in xrange(0 , rgb_image.shape[1]):
+			px_values = []
+			px_values.append(rgb_image.item(x , y , 2))
+			px_values.append(rgb_image.item(x , y , 1))
+			px_values.append(rgb_image.item(x , y , 0))
+			px_values.append(hsv_center.item(x , y , 0))
+			px_values.append(hsv_center.item(x , y , 1))
+			px_values.append(hsv_center.item(x , y , 2))			
+			if all([ v != 0 for v in px_values ]):
+				px_values.append(label) #adiciona a label na ultima posicao do array
+				valid_values.append(px_values)
+	return valid_values
+			
+
+
+
+
+rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
+center = get_pxs(rgb_image , 30)
+hemacias = get_herythocytes_pxs(rgb_image , 30)
+fundo = get_background_pxs(rgb_image , 30)
+center_values = get_valid_values(center , 0)
+erythrocytes_values = get_valid_values(hemacias , 1)
+background_values = get_valid_values(fundo , 2)
+all_values = center_values + erythrocytes_values + background_values
+
+#print(all_values)
+
+
+file = open('valores_pxs.csv' , 'w')
+
+for values in all_values:
+
+	file.write(str(values[0]) + ',' + str(values[1]) + ',' + str(values[2]) + ',' + str(values[3]) + ',' + str(values[4]) + ',' + str(values[5]) + ',' + str(values[6]) + '\n')
+
+file.close()
+
+
+
+
+
+
+
+
+
+
+#cv2.imshow('celula_central' , center)
+#cv2.imshow('hemacias' , hemacias)
+#cv2.imshow('fundo' , fundo)
+cv2.waitKey(0)
