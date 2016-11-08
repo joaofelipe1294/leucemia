@@ -120,7 +120,25 @@ def get_valid_values(rgb_image , label):
 
 
 
+base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base.load()
 
+base_values = []
+for image in base.train_images:
+	rgb_image = cv2.imread(image.path)
+	center = get_pxs(rgb_image , 30)
+	hemacias = get_herythocytes_pxs(rgb_image , 30)
+	fundo = get_background_pxs(rgb_image , 30)
+	center_values = get_valid_values(center , 0)
+	erythrocytes_values = get_valid_values(hemacias , 1)
+	background_values = get_valid_values(fundo , 2)
+	all_values = center_values + erythrocytes_values + background_values
+	base_values += all_values
+	print(image.path)
+
+
+
+'''
 rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
 center = get_pxs(rgb_image , 30)
 hemacias = get_herythocytes_pxs(rgb_image , 30)
@@ -129,13 +147,13 @@ center_values = get_valid_values(center , 0)
 erythrocytes_values = get_valid_values(hemacias , 1)
 background_values = get_valid_values(fundo , 2)
 all_values = center_values + erythrocytes_values + background_values
-
+'''
 #print(all_values)
 
 
 file = open('valores_pxs.csv' , 'w')
 
-for values in all_values:
+for values in base_values:
 
 	file.write(str(values[0]) + ',' + str(values[1]) + ',' + str(values[2]) + ',' + str(values[3]) + ',' + str(values[4]) + ',' + str(values[5]) + ',' + str(values[6]) + '\n')
 
