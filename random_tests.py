@@ -116,10 +116,13 @@ def get_valid_values(rgb_image , label):
 				px_values.append(label) #adiciona a label na ultima posicao do array
 				valid_values.append(px_values)
 	return valid_values
+
+
+
 			
 
 
-
+'''
 base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 
@@ -131,14 +134,14 @@ for image in base.train_images:
 	fundo = get_background_pxs(rgb_image , 30)
 	center_values = get_valid_values(center , 0)
 	erythrocytes_values = get_valid_values(hemacias , 1)
-	background_values = get_valid_values(fundo , 2)
+	background_values = get_valid_values(fundo , 1)    #alterado para que a label dos valores referentes ao fundo fique com a label 1
 	all_values = center_values + erythrocytes_values + background_values
 	base_values += all_values
 	print(image.path)
 
 
 
-'''
+"""
 rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
 center = get_pxs(rgb_image , 30)
 hemacias = get_herythocytes_pxs(rgb_image , 30)
@@ -147,7 +150,7 @@ center_values = get_valid_values(center , 0)
 erythrocytes_values = get_valid_values(hemacias , 1)
 background_values = get_valid_values(fundo , 2)
 all_values = center_values + erythrocytes_values + background_values
-'''
+"""
 #print(all_values)
 
 
@@ -158,9 +161,80 @@ for values in base_values:
 	file.write(str(values[0]) + ',' + str(values[1]) + ',' + str(values[2]) + ',' + str(values[3]) + ',' + str(values[4]) + ',' + str(values[5]) + ',' + str(values[6]) + '\n')
 
 file.close()
+'''
 
 
 
+
+X = []
+y = []
+file = open('valores_pxs.csv' , 'r')
+print('lendo arquivo csv ...')
+for line in file:
+	values = map(int , line.split(','))
+	caracteristics = values[0: len(values) - 1]
+	label = values[len(values) - 1]
+	X.append(caracteristics)
+	y.append(label)
+file.close()
+print('leitura concluida !')
+
+from sklearn.svm import SVC
+classifier = SVC(kernel="linear" , C = 0.025 , probability = True)
+print('treinando classificador ...')
+classifier.fit(X , y)
+print('treinamento concluido !')
+
+
+base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
+base.load()
+for image in base.train_images:
+	print('comecando segmentacao ...')
+	rgb_image = cv2.imread(image.path)
+	copy = rgb_image.copy()
+	hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
+	caracteristics = []
+	for x in xrange(0 , rgb_image.shape[0]):
+		for y in xrange(0 , rgb_image.shape[1]):
+			r = rgb_image.item(x , y , 2)
+			g = rgb_image.item(x , y , 1)
+			b = rgb_image.item(x , y , 0)
+			h = hsv_image.item(x , y , 0)
+			s = hsv_image.item(x , y , 1)
+			v = hsv_image.item(x , y , 2)
+			caracteristics = [[r , g , b , h , s , v]]
+			label = classifier.predict(caracteristics)
+			if label[0] == 1:
+				rgb_image.itemset((x , y , 0) , 127)
+				rgb_image.itemset((x , y , 1) , 127)
+				rgb_image.itemset((x , y , 2) , 127)
+	print('segmentacao concluida !')
+	cv2.imshow('yo' , rgb_image)
+	cv2.imshow('original' , copy)
+	cv2.waitKey(0)	
+
+
+print('comecando segmentacao ...')
+rgb_image = cv2.imread('bases/ALL/Im242_0.tif')
+hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
+caracteristics = []
+for x in xrange(0 , rgb_image.shape[0]):
+	for y in xrange(0 , rgb_image.shape[1]):
+		r = rgb_image.item(x , y , 2)
+		g = rgb_image.item(x , y , 1)
+		b = rgb_image.item(x , y , 0)
+		h = hsv_image.item(x , y , 0)
+		s = hsv_image.item(x , y , 1)
+		v = hsv_image.item(x , y , 2)
+		caracteristics = [[r , g , b , h , s , v]]
+		label = classifier.predict(caracteristics)
+		if label[0] == 1:
+			rgb_image.itemset((x , y , 0) , 127)
+			rgb_image.itemset((x , y , 1) , 127)
+			rgb_image.itemset((x , y , 2) , 127)
+print('segmentacao concluida !')
+cv2.imshow('yo' , rgb_image)
+cv2.waitKey(0)
 
 
 
@@ -171,4 +245,4 @@ file.close()
 #cv2.imshow('celula_central' , center)
 #cv2.imshow('hemacias' , hemacias)
 #cv2.imshow('fundo' , fundo)
-cv2.waitKey(0)
+#cv2.waitKey(0)
