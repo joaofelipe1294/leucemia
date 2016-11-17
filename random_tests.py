@@ -14,18 +14,21 @@ LABELS
 
 
 
-def get_pxs(rgb_image , kernel_size):
+#def get_pxs(rgb_image , kernel_size):
+def get_pxs(rgb_image):
 	'''metodo que pega os pixels centrais da imagem , ate o momento seta novos valores pra teste nos pixels alvo 
 	kernel_size = 31
 	seed = tuple([int(rgb_image.shape[0] / 2) , int(rgb_image.shape[1] / 2)])
 	'''
-	kernel_ray = int(kernel_size / 2)
-	mask = np.zeros((rgb_image.shape[:2]) , np.uint8)
-	image_center = tuple([int(rgb_image.shape[0] / 2) , int(rgb_image.shape[1] / 2)])
-	for x in xrange(image_center[0] - kernel_ray , image_center[0] + kernel_ray):
-		for y in xrange(image_center[1] - kernel_ray , image_center[1] + kernel_ray):
-			mask.itemset((x , y) , 1)
+	h , s , v = ImageChanels(rgb_image).hsv(display = False)
+	erythrocytes = get_erythocytes(rgb_image)
+	mask_image = cv2.bitwise_not(erythrocytes)
+	mask_image = cv2.threshold(mask_image,10,1,cv2.THRESH_BINARY)[1]
+	mask = s * mask_image
+	mask = cv2.threshold(mask,60,1,cv2.THRESH_BINARY)[1]
 	mask = cv2.merge((mask , mask , mask))
+	cv2.imshow('get_pxs' , rgb_image * mask)
+	cv2.waitKey(0)
 	return rgb_image * mask
 
 
@@ -122,7 +125,7 @@ def get_valid_values(rgb_image , label):
 			
 
 
-'''
+"""
 base = BaseLoader(train_base_path = 'bases/teste_segmentacao' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 
@@ -135,23 +138,10 @@ for image in base.train_images:
 	center_values = get_valid_values(center , 0)
 	erythrocytes_values = get_valid_values(hemacias , 1)
 	background_values = get_valid_values(fundo , 1)    #alterado para que a label dos valores referentes ao fundo fique com a label 1
+	#all_values = center_values + background_values
 	all_values = center_values + erythrocytes_values + background_values
 	base_values += all_values
 	print(image.path)
-
-
-
-"""
-rgb_image = cv2.imread('bases/ALL/Im001_1.tif')
-center = get_pxs(rgb_image , 30)
-hemacias = get_herythocytes_pxs(rgb_image , 30)
-fundo = get_background_pxs(rgb_image , 30)
-center_values = get_valid_values(center , 0)
-erythrocytes_values = get_valid_values(hemacias , 1)
-background_values = get_valid_values(fundo , 2)
-all_values = center_values + erythrocytes_values + background_values
-"""
-#print(all_values)
 
 
 file = open('valores_pxs.csv' , 'w')
@@ -161,11 +151,11 @@ for values in base_values:
 	file.write(str(values[0]) + ',' + str(values[1]) + ',' + str(values[2]) + ',' + str(values[3]) + ',' + str(values[4]) + ',' + str(values[5]) + ',' + str(values[6]) + '\n')
 
 file.close()
+"""
+
+
+
 '''
-
-
-
-
 X = []
 y = []
 file = open('valores_pxs.csv' , 'r')
@@ -211,13 +201,40 @@ for image in base.train_images:
 	print('segmentacao concluida !')
 	cv2.imshow('yo' , rgb_image)
 	cv2.imshow('original' , copy)
-	cv2.waitKey(0)	
+	cv2.waitKey(2000)	
+'''
 
 
-print('comecando segmentacao ...')
-rgb_image = cv2.imread('bases/ALL/Im242_0.tif')
+
+
+#########################################################
+
+rgb_image = cv2.imread('bases/ALL/Im176_0.tif')
+print('Extraindo valores dos pxs ...')
+center = get_pxs(rgb_image)
+hemacias = get_herythocytes_pxs(rgb_image , 30)
+fundo = get_background_pxs(rgb_image , 30)
+center_values = get_valid_values(center , 0)
+erythrocytes_values = get_valid_values(hemacias , 1)
+background_values = get_valid_values(fundo , 1)    #alterado para que a label dos valores referentes ao fundo fique com a label 1
+all_values = center_values + erythrocytes_values + background_values
+X = [values[0 : len(values) - 1] for values in all_values]
+y = [values[len(values) - 1] for values in all_values]
+print('Concluida extracao dos valores dos pxs !')
+from sklearn.svm import SVC
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.neighbors import KNeighborsClassifier
+classifier = SVC(kernel="linear" , C = 0.025 , probability = True)
+#classifier = LinearDiscriminantAnalysis()
+#classifier =  AdaBoostClassifier()
+#classifier = KNeighborsClassifier(3)
+print('treinando classificador ...')
+classifier.fit(X , y)
+print('treinamento concluido !')
+print('Comecando a varrer a imagem ...')
+original = rgb_image.copy()
 hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
-caracteristics = []
 for x in xrange(0 , rgb_image.shape[0]):
 	for y in xrange(0 , rgb_image.shape[1]):
 		r = rgb_image.item(x , y , 2)
@@ -232,17 +249,24 @@ for x in xrange(0 , rgb_image.shape[0]):
 			rgb_image.itemset((x , y , 0) , 127)
 			rgb_image.itemset((x , y , 1) , 127)
 			rgb_image.itemset((x , y , 2) , 127)
-print('segmentacao concluida !')
-cv2.imshow('yo' , rgb_image)
+		#print('X :' + str(x) + ' | Y : ' + str(y))
+print('Segmentacao concluida !')
+cv2.imshow('Segmentada' , rgb_image)
+cv2.imshow('Original' , original)
 cv2.waitKey(0)
 
+'''
+rgb_image = cv2.imread('bases/ALL/Im110_1.tif')
+center_pxs = get_pxs(rgb_image)
+#h , s , v = ImageChanels(rgb_image).hsv(display = False)
+#erythrocytes = get_erythocytes(rgb_image)
+#mask_image = cv2.bitwise_not(erythrocytes)
+#mask_image = cv2.threshold(mask_image,10,1,cv2.THRESH_BINARY)[1]
+#clear_image = s * mask_image
+#clear_image = cv2.threshold(clear_image,60,255,cv2.THRESH_BINARY)[1]
+cv2.imshow('original' , rgb_image)
+cv2.imshow('hemacias' , center_pxs)
+cv2.waitKey(0)
+'''
 
 
-
-
-
-
-#cv2.imshow('celula_central' , center)
-#cv2.imshow('hemacias' , hemacias)
-#cv2.imshow('fundo' , fundo)
-#cv2.waitKey(0)

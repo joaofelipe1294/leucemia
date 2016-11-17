@@ -2,6 +2,8 @@ from modules.utils.progress_bar import ProgressBar
 from modules.image_processing.segmentation import FirstSegmentation
 from modules.image_processing.segmentation import ErythrocytesRemoval
 from modules.features.feature_extractor import FeatureExtractor
+import cv2
+import numpy as np
 
 
 class BaseProcessor:
@@ -15,7 +17,9 @@ class BaseProcessor:
 		base_features = []
 		iteration = 0
 		for image in images:
-			segmented_image = FirstSegmentation(image.path).process()
+			segmented_image = ErythrocytesRemoval(image.path).process()
+			#cv2.imshow('segmented_image' , segmented_image)
+			#cv2.waitKey(300)
 			area , perimeter , excess , average = FeatureExtractor(segmented_image).get_features()
 			base_features.append([area , perimeter , excess])
 			iteration += 1
