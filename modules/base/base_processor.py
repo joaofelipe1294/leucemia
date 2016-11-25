@@ -18,8 +18,8 @@ class BaseProcessor:
 		iteration = 0
 		for image in images:
 			segmented_image = ErythrocytesRemoval(image.path).process()
-			#cv2.imshow('segmented_image' , segmented_image)
-			#cv2.waitKey(300)
+			cv2.imshow('segmented_image' , segmented_image)
+			cv2.waitKey(2000)
 			area , perimeter , excess , average = FeatureExtractor(segmented_image).get_features()
 			base_features.append([area , perimeter , excess])
 			iteration += 1
