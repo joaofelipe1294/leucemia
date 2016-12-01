@@ -180,9 +180,15 @@ class Segmentation(object):
 		return opened_image
 
 
-	def display_segmented_image(self , segmented_image):
-		cv2.imshow('segmented' , segmented_image)
-		cv2.waitKey(200)
+	def display_image(self , image , time = 200):
+		"""
+			metodo usado para exibir uma imagem por um determinado tempo
+			parametros
+				@image - imagem que sera exibida
+				@time  - tempo que a imagem sera exibida 
+		"""
+		cv2.imshow('segmented' , image)
+		cv2.waitKey(time)
 
 
 ##################################################################################################################
@@ -228,7 +234,7 @@ class ErythrocytesRemoval(Segmentation):
 			mask = saturation_cell
 		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)   #aplica a mascara na imagem original , assim segmentando a celula central 
 		if display:
-			self.display_segmented_image(segmented_image)
+			self.display_image(segmented_image)
 		return segmented_image
 
 
@@ -259,7 +265,7 @@ class FirstSegmentation(Segmentation):
 			mask = self.remove_noise_objects(contour_image , threshold_image , cell_center = cell_center , cell_radius = cell_radius , contours = contours)
 		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)
 		if display:
-			self.display_segmented_image(segmented_image)
+			self.display_image(segmented_image)
 		return segmented_image
 
 
