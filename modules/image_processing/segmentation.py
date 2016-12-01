@@ -215,6 +215,63 @@ class Segmentation(object):
 
 
 
+	def mask_builder(self , image , kernel = 30):
+		"""
+			metodo com o objetivo de gerar uma mascara composta por quadrados com tabanho X (kernel) , esses quadrados ficam nas bordas da imagem. Eh usado para pegar pxs do fundo e das hemacias
+			parametros
+				image  - imagem usada para pegar as dimensoes da mascara
+				kernel - medida do lado de um dos quadrados que irao compor a mascara
+		"""
+		kernel_ray = int(kernel / 2)                    #raio do kernel
+		mask = np.zeros((image.shape[:2]) , np.uint8)   #criei mascara
+		seeds = []     #lista que contem todas as coordenadas usadas como semente
+		for x in xrange(kernel_ray , image.shape[1] , kernel * 2):   #vai de metade do kernel , ate o limite da largura da imagem , de 2 vezes o kernel por vez para criar um espaco esntre os blocos
+			top_seed = tuple([kernel_ray, x])
+			bottom_seed = tuple([image.shape[0] - kernel_ray , x])
+			left_seed = tuple([x , kernel_ray])
+			right_seed = tuple([x , image.shape[1] - kernel_ray])
+			if x + kernel_ray < image.shape[1]:
+				seeds.append(top_seed)
+				seeds.append(bottom_seed)
+				seeds.append(left_seed)
+				seeds.append(right_seed)
+			for seed in seeds:
+				for x in xrange(seed[0] - kernel_ray, seed[0] + kernel_ray):
+					for y in xrange(seed[1] - kernel_ray , seed[1] + kernel_ray):
+						mask.itemset((x , y) , 1)
+		return mask
+
+
+	def get_red_cells_pxs(self):
+		"""
+			metodo que tem como objetivo extrair alguns pxs referentes as hemacias presentes na imagem, retorna uma 
+			imagem que contem apenas parte das hemacias presentes na imagem original
+		"""
+		red_cells = self.get_red_cells(self.rgb_image)                  #pega as hemacias da imagem
+		red_cells_rgb = self.apply_rgb_mask(self.rgb_image , red_cells) #aplica mascara para que fiquem apenas as hemacias da imagem original em uma nova imagem RGB
+		mask = self.mask_builder(self.rgb_image)                        #gera a mascara que ira preservar apenas os pixels das bordas das imagens
+		mask = cv2.merge((mask , mask , mask))                          #torna a mascara tridimensional
+		segmented_image = red_cells_rgb * mask                          #multiplica a imagem RGB que contem apenas as hemacias pela mascara
+		return segmented_image
+
+
+	def get_background_pxs(self):
+		"""
+			metodo que tem como objetivo extrair ps pxs do fundo da imagem , retorna uma imagem que contem apenas partes do fundo 
+		"""
+		red_cells = self.get_red_cells(self.rgb_image)                                #pega as hemacias da imagem
+		inverted_red_cells = cv2.bitwise_not(red_cells)                               #inverte a imagem que contem apenas as hemacias para que ela fique com as hemacias em preto e o resto branco
+		red_cells_free_rgb = self.apply_rgb_mask(self.rgb_image , inverted_red_cells) #usa a imagem que possui as hemacias com o valor 0 como mascara para remover as hemacias da imagem original RGB
+		s = ImageChanels(red_cells_free_rgb).hsv('S')                                 #pega o canal referente a saturacao
+		otsu = OtsuThreshold(s).process()                                             #aplica um threshold de Otsu para que deixe apenas as celulas que possuem uma alta saturacao (celula central e celulas roxas mas que estao presentes nas bordas)
+		otsu_not = cv2.bitwise_not(otsu)                                              #inverte o resultado do otsu para que tudo que tenha uma alta saturacao fique preto e o resto fique branco
+		free_center = self.apply_rgb_mask(red_cells_free_rgb , otsu_not)              #usa o resultado da inversao do resultado do threshold como mascara com a finalidade de remover da imagem todos os pixels que possuem uma alta saturacao (celulas roxas)
+		mask = self.mask_builder(free_center , kernel)                                #gera a mascara que tem como proposito extrair pixels do fundo
+		mask = cv2.merge((mask , mask , mask))                                        #torna a mascara tridimensional
+		segmented_image = free_center * mask                                          #multiplica a imagem RGB resultante dos processos aplicados para remover as hemacias e as celulas roxas logo contendo apenas o fundo ou algo proximo a isso
+		return segmented_image
+
+
 ##################################################################################################################
 
 
@@ -276,14 +333,14 @@ class FirstSegmentation(Segmentation):
 
 	def process(self , display = False):                                      
 		#faz a segmentacao da celula de interece   
-		saturation = ImageChanels(self.rgb_image).hsv('S')                                         #extraido canal relativo a Saturacao
-		threshold_image = OtsuThreshold(saturation).process()									   #aplica threshold de OTSU no canal referente a saturacao 
-		flooded_image = FloodBorders(threshold_image).process()                           #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
-		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, self.kernel)  #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
-		contours , contour_image = self.get_contours(flooded_image)                                           #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
-		cell_center , cell_radius , contours = self.find_interest_cell(contours)                            #computa o ponto central e o raio da celula de interesse 
+		saturation = ImageChanels(self.rgb_image).hsv('S')                             #extraido canal relativo a Saturacao
+		threshold_image = OtsuThreshold(saturation).process()					       #aplica threshold de OTSU no canal referente a saturacao 
+		flooded_image = FloodBorders(threshold_image).process()                        #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
+		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, self.kernel)    #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
+		contours , contour_image = self.get_contours(flooded_image)                    #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
+		cell_center , cell_radius , contours = self.find_interest_cell(contours)       #computa o ponto central e o raio da celula de interesse 
 		mask = None
-		if len(contours) == 0:                                                                     #se o numero de contornos for igual a zero significa que existe apenas um objeto na imagem opened_image logo a mascara ja esta correta
+		if len(contours) == 0:                                                         #se o numero de contornos for igual a zero significa que existe apenas um objeto na imagem opened_image logo a mascara ja esta correta
 			mask = opened_image
 		else:
 			mask = self.remove_noise_objects(contour_image , threshold_image , cell_center = cell_center , cell_radius = cell_radius , contours = contours)
