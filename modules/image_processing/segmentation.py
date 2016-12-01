@@ -62,19 +62,24 @@ class Segmentation(object):
 		return result_image
 
 
-	def get_interest_cell(self , image):
+	def get_interest_cell(self , image , binarization_method = 'OTSU'):
 		"""
 			extrai a celula central de uma imagem em tons de cinza , tem como objetivo retornar apenas a celula central em branco e o resto
 			em preto , algumas vezes o resultado fica ruim , normalmente recebe como parametro a MATIZ ou a SATURACAO de uma imagem , 
 			normalmente quando o resultado da MATIZ fica ruim o da SATURACAO eh satisfatorio , o contrario tambem eh valido.
 			parametros
 				@image - imagem em tons de ciza que sera processada , e tera sua celula central destacada
+				@binarization_method - define o algoritmo de binarizacao que sera utilisado ,no momento trabalha com OTSU ou BINARY
 		"""
-		binary_image = OtsuThreshold(image).process()                        	#binariza o canal da matiz , a binarizacao da saturacao tende a expor a celula como um todo , mas normalmente possui muitos ruidos 
-		flooded_image = FloodBorders(binary_image , value = 0).process()        #inunda as bordas da matiz_binaria para remover os objetos presentes nas bordas
-		contours , contours_image = self.get_contours(flooded_image)       #pega os contornos da matiz inundada
+		binary_image = OtsuThreshold(image).process()                        	         #binariza o canal da matiz , a binarizacao da saturacao tende a expor a celula como um todo , mas normalmente possui muitos ruidos 
+		if binarization_method == 'OTSU':
+			binary_image = OtsuThreshold(image).process()                                #binariza o canal da matiz , a binarizacao da saturacao tende a expor a celula como um todo , mas normalmente possui muitos ruidos 
+		elif binarization_method == 'BINARY':
+			binary_image = cv2.threshold(image , 10 , 255 , cv2.THRESH_BINARY)[1]
+		flooded_image = FloodBorders(binary_image , value = 0).process()                 #inunda as bordas da matiz_binaria para remover os objetos presentes nas bordas
+		contours , contours_image = self.get_contours(flooded_image)                     #pega os contornos da matiz inundada
 		filled_cell = RegionGrowing(contours_image , seed = (int(self.rgb_image.shape[0] / 2) , int(self.rgb_image.shape[1] / 2)) , value = 255).process() 	#aplica crescimento de recioes no ponto central da imagem , uma vez que a celula de interesse tende a ficar no centro da imagem , assim destadando a celula central das demais
-		interest_cell = cv2.morphologyEx(filled_cell, cv2.MORPH_OPEN, self.kernel)            #aplica operacao de abertura para remover os contornos deixando apenas a celula central que estava inundada
+		interest_cell = cv2.morphologyEx(filled_cell, cv2.MORPH_OPEN, self.kernel)       #aplica operacao de abertura para remover os contornos deixando apenas a celula central que estava inundada
 		clean_interest_cell = cv2.threshold(interest_cell,127,255,cv2.THRESH_BINARY)[1]  #aplica um threshold com o objetivo de remover valores que nao sejam pequenos desaparecam
 		return clean_interest_cell
 
