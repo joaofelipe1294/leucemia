@@ -272,6 +272,30 @@ class Segmentation(object):
 		return segmented_image
 
 
+	def get_valid_values(self , label):
+		"""
+			metodo que retorna uma lista composta por listas que contem sete posicoes ,as seis primeiras posicoes sao referentes aos valores de cada um dos canais , e a ultima posicao eh a label desse tipo de pixel (CELULA CENTRAL , HEMACIA , FUNDO)
+			parametros
+				label     - label que sera atribuida aos vetores de caracteristicas
+		"""
+		valid_values = [] #cria a lista que ira conter os valores validos (pxs com pelo menos um dos canais diferente de 0)
+		hsv_center = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2HSV) #converte a imagem RGB para HSV
+		for x in xrange(0 , self.rgb_image.shape[0]):
+			for y in xrange(0 , self.rgb_image.shape[1]):
+				px_values = [] #cria uma lista que ira conter os valores de cada um dos canais da imagem RGBHSV e a label que referese a hemacia , fundo e celula central
+				px_values.append(self.rgb_image.item(x , y , 2))
+				px_values.append(self.rgb_image.item(x , y , 1))
+				px_values.append(self.rgb_image.item(x , y , 0))
+				px_values.append(hsv_center.item(x , y , 0))
+				px_values.append(hsv_center.item(x , y , 1))
+				px_values.append(hsv_center.item(x , y , 2))			
+				if all([ v != 0 for v in px_values ]):
+					#px_values.append(label) #adiciona a label na ultima posicao do array
+					valid_values.append(px_values)
+		labels = [label] * len(valid_values)
+		return valid_values , labels
+
+
 ##################################################################################################################
 
 
