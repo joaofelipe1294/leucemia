@@ -7,6 +7,8 @@ from modules.image_processing.image_chanels import ImageChanels
 from modules.image_processing.filters import OtsuThreshold
 from modules.image_processing.filters import FloodBorders
 from modules.image_processing.filters import RegionGrowing
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+import sys
 
 
 ##################################################################################################################
@@ -46,14 +48,14 @@ class Segmentation(object):
 		pass	
 
 
-	def get_red_cells(self):
+	def get_red_cells(self , rgb_image):
 		"""
 			extrai as hemacias de uma imagem RGB , o retorno eh uma imagem preta com apenas as hemacias em branco 
 			parametros
 				@rgb_image - imagem rgb que sera processada
 		"""
-		blue_chanel = ImageChanels(self.rgb_image).rgb(chanel = 'B')         #separa canais RGB
-		saturation = ImageChanels(self.rgb_image).hsv(chanel ='S')           #separa canais HSV
+		blue_chanel = ImageChanels(rgb_image).rgb(chanel = 'B')         #separa canais RGB
+		saturation = ImageChanels(rgb_image).hsv(chanel ='S')           #separa canais HSV
 		saturation_binary = OtsuThreshold(saturation).process()         #aplica threshold na saturacao
 		blue_chanel_binary = OtsuThreshold(blue_chanel).process()       #aplica threshold no canal B (azul)
 		sum_image = blue_chanel_binary + saturation_binary              #soma os threshold da saturacao ao threshold do canal azul para remover a celula central da imagem , mantem apenas as hemacias em preto e o fundo branco
@@ -209,7 +211,7 @@ class Segmentation(object):
 		red_cells_free_image = self.apply_rgb_mask(homogenized_image , red_cells_inverted) #aplica a mascara na imagem original , removendo as hemacias
 		gray = cv2.cvtColor(red_cells_free_image , cv2.COLOR_BGR2GRAY)                     #converte a imagem que teve suas hemacias removidas para tons de cinza
 		gray_flooded = FloodBorders(gray).process()                                        #inunda as bordas da imagem em tons de cinza, feito com o proposito de deixar o fundo com valor igual a 0
-		interest_cell = get_interest_cell(gray_flooded , binarization_method = 'BINARY')   #recupera apenas a celula central com valores 255 e os demais valores com o valor 0
+		interest_cell = self.get_interest_cell(gray_flooded , binarization_method = 'BINARY')   #recupera apenas a celula central com valores 255 e os demais valores com o valor 0
 		segmented_image = self.apply_rgb_mask(self.rgb_image , interest_cell)              #aplica essa mascara que na teoria contem apenas a celula central (pelo menos boa parte dela) com a imagem original , removendo o fundo e as hemacias
 		return segmented_image
 
@@ -266,31 +268,31 @@ class Segmentation(object):
 		otsu = OtsuThreshold(s).process()                                             #aplica um threshold de Otsu para que deixe apenas as celulas que possuem uma alta saturacao (celula central e celulas roxas mas que estao presentes nas bordas)
 		otsu_not = cv2.bitwise_not(otsu)                                              #inverte o resultado do otsu para que tudo que tenha uma alta saturacao fique preto e o resto fique branco
 		free_center = self.apply_rgb_mask(red_cells_free_rgb , otsu_not)              #usa o resultado da inversao do resultado do threshold como mascara com a finalidade de remover da imagem todos os pixels que possuem uma alta saturacao (celulas roxas)
-		mask = self.mask_builder(free_center , kernel)                                #gera a mascara que tem como proposito extrair pixels do fundo
+		mask = self.mask_builder(free_center)                                #gera a mascara que tem como proposito extrair pixels do fundo
 		mask = cv2.merge((mask , mask , mask))                                        #torna a mascara tridimensional
 		segmented_image = free_center * mask                                          #multiplica a imagem RGB resultante dos processos aplicados para remover as hemacias e as celulas roxas logo contendo apenas o fundo ou algo proximo a isso
 		return segmented_image
 
 
-	def get_valid_values(self , label):
+	def get_valid_values(self , rgb_image , label):
 		"""
 			metodo que retorna uma lista composta por listas que contem sete posicoes ,as seis primeiras posicoes sao referentes aos valores de cada um dos canais , e a ultima posicao eh a label desse tipo de pixel (CELULA CENTRAL , HEMACIA , FUNDO)
 			parametros
-				label     - label que sera atribuida aos vetores de caracteristicas
+				@rgb_image - imagem grb que sera varrida e tera as os valores de cada px diferente de 0 extraidos e montados um vetor de caracteristicas
+				@label     - label que sera atribuida aos vetores de caracteristicas
 		"""
-		valid_values = [] #cria a lista que ira conter os valores validos (pxs com pelo menos um dos canais diferente de 0)
+		valid_values = []                                            #cria a lista que ira conter os valores validos (pxs com pelo menos um dos canais diferente de 0)
 		hsv_center = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2HSV) #converte a imagem RGB para HSV
-		for x in xrange(0 , self.rgb_image.shape[0]):
-			for y in xrange(0 , self.rgb_image.shape[1]):
-				px_values = [] #cria uma lista que ira conter os valores de cada um dos canais da imagem RGBHSV e a label que referese a hemacia , fundo e celula central
-				px_values.append(self.rgb_image.item(x , y , 2))
-				px_values.append(self.rgb_image.item(x , y , 1))
-				px_values.append(self.rgb_image.item(x , y , 0))
+		for x in xrange(0 , rgb_image.shape[0]):
+			for y in xrange(0 , rgb_image.shape[1]):
+				px_values = []                                       #cria uma lista que ira conter os valores de cada um dos canais da imagem RGBHSV e a label que referese a hemacia , fundo e celula central
+				px_values.append(rgb_image.item(x , y , 2))
+				px_values.append(rgb_image.item(x , y , 1))
+				px_values.append(rgb_image.item(x , y , 0))
 				px_values.append(hsv_center.item(x , y , 0))
 				px_values.append(hsv_center.item(x , y , 1))
 				px_values.append(hsv_center.item(x , y , 2))			
 				if all([ v != 0 for v in px_values ]):
-					#px_values.append(label) #adiciona a label na ultima posicao do array
 					valid_values.append(px_values)
 		labels = [label] * len(valid_values)
 		return valid_values , labels
@@ -324,7 +326,7 @@ class ErythrocytesRemoval(Segmentation):
 
 
 	def process(self , display = False):
-		erythrocytes = self.get_red_cells()                              #extrai as hemacias 
+		erythrocytes = self.get_red_cells(self.rgb_image)                              #extrai as hemacias 
 		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)            #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
 		erythrocytes_free = self.apply_rgb_mask(self.rgb_image , erythrocytes_inverted)
 		h , s = ImageChanels(erythrocytes_free).hsv(display = False)[:2] #separa os canais da matiz e da saturacao da imagem livre de hemacias , agora passase a trabalhar com a matiz e a saturacao porque quando uma tem mal resultado o resultado do outro canal normalmente eh bom
@@ -398,7 +400,7 @@ class Homogenization(Segmentation):
 		shifted = cv2.pyrMeanShiftFiltering(self.rgb_image, 10, 12) #aplica o filtro MeanShiftFiltering , usado para homogenizar a imagem com o proposito de deixar o fundo com exatamente a mesma tonalidade
 		gray_image = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)      #converte a imagem para tons de cinza
 		flooded_image = FloodBorders(gray_image , value = 0).process()       #inunda as bordas da imagem homogenizada que foi convertida para tons de cinza , isso remove o fundo e as hemacias que estao presentes nas bordas
-		erythrocytes = self.get_red_cells()                  #obtem as hemacias da imagem
+		erythrocytes = self.get_red_cells(self.rgb_image)                  #obtem as hemacias da imagem
 		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)       #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
 		result = self.apply_gray_scale_mask(flooded_image , erythrocytes_inverted)  #multiplica as hemacias com valor 0 e a imagem inundada , com objetivo de remover a maior parte do fundo e das hemacias
 		closing = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)      #aplica abertura para remover pequenos ruidos da imagem resultante da multiplicacao
@@ -415,6 +417,81 @@ class Homogenization(Segmentation):
 		closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, self.kernel)         #aplica fechamento para remover os pontos pretos internos da celula central (binarizada)
 		result = self.apply_rgb_mask(self.rgb_image , closing)
 		if display:
-			cv2.imshow('result' , result)
-			cv2.waitKey(0)
+			self.display_image(result)
 		return result
+
+
+##################################################################################################################
+
+##################################################################################################################
+
+
+class SmartSegmentation(Segmentation):
+	"""
+		metodo de segmentacao que utiliza o classificador LDA para classificar os pxs em fundo , hemacia ou celula
+		de interesse. 
+		1. Faz uma pre segmentacao buscando isolar cada uma das partes da celula
+		2. Monta vetores de caracteristicas baseado nos valores de cada um dos canais RGB e HSV de cada px da imagem 
+		3. Treina dois classificadores , um especialista em detectar o fundo (utilizado label 0 para hemacias e 
+		celula central e 1 para o fundo) e outro especialista em detectar hemacias(utilizado label 0 para celula cen-
+		tral e 1 para hemacias)
+		4. Varre a imagem classificando cada px , e montando uma mascara que ira conter os pxs do fundo e das hemcais
+		5 multiplica a mascara invertida pela imagem original, resultando na maioria dos casos em apenas a celula cen-
+		tral e o resto preto
+	"""
+
+
+	def __init__(self , image_path):
+		self.rgb_image = cv2.imread(image_path)
+		super(SmartSegmentation , self).__init__(image_path = image_path)
+
+
+	def process(self , display = False):
+		#print('\rExtraindo valores dos pxs ...')
+		pre_segmented = self.pre_segmentation()                                                #pega imagem que contem apenas parte da celula central
+		red_cells = self.get_red_cells_pxs()                                                   #pega imagem que contem apenas parte da hemacias
+		background = self.get_background_pxs()                                                 #pega imagem que contem apenas parte do fundo
+		pre_segmented_values , pre_segmented_labels = self.get_valid_values(pre_segmented , 0) #atribui a label 0 para os valores referentes a celula central
+		red_cells_values , red_cells_labels = self.get_valid_values(red_cells , 0)             #atribui a label 0 para os valores referentes as hemacias 
+		background_values , background_labels = self.get_valid_values(background , 1)          #atribui a label 1 para os valores referentes ao fundo da imagem
+		X_background = pre_segmented_values + red_cells_values + background_values             #concatena as caracteristicas de cada px formando um vetor de caracteristicas
+		y_background = pre_segmented_labels + red_cells_labels + background_labels             #concatena as listas compostas pelas label de cada vetor de caracteristica que forma X
+		center_values_h , center_labels_h = self.get_valid_values(pre_segmented , 0)           #atribui a label 0 aos valores referentes a celula central
+		red_cells_values_h , red_cells_labels_h = self.get_valid_values(red_cells , 1)         #atribui a label 1 aos valores referentes as hemacias
+		X_red_cells = center_values_h + red_cells_values_h                    #concatena as caracteristicas de cada px formando um vetor de caracteristicas
+		y_red_cells = center_labels_h + red_cells_labels_h                    #concatena as listas compostas pelas label de cada vetor de caracteristica que forma X_red_cells
+		#print('Concluida extracao dos valores dos pxs !')
+		classifier_background = LinearDiscriminantAnalysis()                  #cria classificador especialista em detectar o fundo
+		classifier_red_cells = LinearDiscriminantAnalysis()                   #cria classificador especialista em detectar as hemacias
+		#print('treinando classificador ...')
+		classifier_background.fit(X_background , y_background)                #treian o classificador especialista em detectar fundo
+		classifier_red_cells.fit(X_red_cells , y_red_cells)                   #treina o classificador especialista em detectar hemacias
+		#print('treinamento concluido !')
+		#print('Comecando a varrer a imagem ...')
+		hsv_image = cv2.cvtColor(self.rgb_image, cv2.COLOR_BGR2HSV)           #cria uma imagem em HSV baseada na imagem original RGB
+		segmentation_plan = np.zeros(self.rgb_image.shape[:2] , np.uint8)     #cria imagem composta apenas por valores 0 e com as mesmas dimensoes da imagem que esta sendo segmentada
+		for x in xrange(0 , self.rgb_image.shape[0]):                         #varre a imagem px a px
+			for y in xrange(0 , self.rgb_image.shape[1]):
+				r = self.rgb_image.item(x , y , 2)                            #pega os valores de cada um dos canais da imagem HSV e RGB para montar o vetor de caracteristicas
+				g = self.rgb_image.item(x , y , 1)
+				b = self.rgb_image.item(x , y , 0)
+				h = hsv_image.item(x , y , 0)
+				s = hsv_image.item(x , y , 1)
+				v = hsv_image.item(x , y , 2)
+				caracteristics = [[r , g , b , h , s , v]]                     #engloba os valores dos canais dentro de uma lista formando o vetor de caracteristicas
+				label = classifier_background.predict(caracteristics)          #verifica qual a label do px atual usando o classificador especialista em detectar pxs relativos ao fundo
+				if label[0] == 1:                                              #caso a label seja 1 (fundo) essa posicao no plano recebe o valor 255
+					segmentation_plan.itemset(x , y , 255)                     #atribui o valor 255 a posicao x,y no plano que sera usado para segmentar a imagem
+				else:
+					label = classifier_red_cells.predict(caracteristics)       #verifica a label do px atual segundo o classificador especialista em detectar pxs das hemacias
+					if label[0] == 1:                                          #caso a label seja 1 (hemacia) a posicao no plano de segmentacao recebe o valor 255 na posicao x,y
+						segmentation_plan.itemset(x , y , 255)                 #atribui o valor 255 a posicao x,y no plano que sera usado para segmentar a imagem
+		#print('Segmentacao concluida !')
+		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))    
+		closing = cv2.morphologyEx(segmentation_plan, cv2.MORPH_CLOSE, kernel) #aplica um fechamento no plano de segmentacao que no momento possui a celula de interesse em preto e o fundo e hemacias em branco para remover ruidos
+		inverted_closing = cv2.bitwise_not(closing)                            #inverte a imagem resultate do fechamento para que a celula central fique branca e o resto em preto
+		mask = self.get_interest_cell(inverted_closing)                             #recupera apenas a celula central da imagem , remove os demais elementos presentes na imagem 
+		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)
+		if display:
+			self.display_image(segmented_image)
+		return segmented_image

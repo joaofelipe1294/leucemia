@@ -6,7 +6,6 @@ from modules.image_processing.filters import *
 from modules.image_processing.segmentation import Homogenization
 from modules.image_processing.filters import FloodBorders
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn import tree
 
 
 """
@@ -172,11 +171,12 @@ def get_valid_values(rgb_image , label):
 
 
 
-count = 1
+from modules.image_processing.segmentation import SmartSegmentation
 base = BaseLoader(train_base_path = 'bases/ALL' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
 for image in base.train_images:
-	rgb_image = cv2.imread(image.path)
+	SmartSegmentation(image.path).process(display = True)
+"""	rgb_image = cv2.imread(image.path)
 	print(image.path)
 	print('Extraindo valores dos pxs ...')
 	pre_segmented = pre_segmentation(rgb_image)  #pega imagem que contem apenas parte da celula central
@@ -230,4 +230,6 @@ for image in base.train_images:
 	#cv2.imshow('segmented_image' , segmented_image)
 	#cv2.imshow('Original' , original)
 	#cv2.waitKey(0)
-	
+"""
+
+
