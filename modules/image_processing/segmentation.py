@@ -46,7 +46,7 @@ class Segmentation(object):
 		pass	
 
 
-	def get_erythrocytes(self):
+	def get_red_cells(self):
 		"""
 			extrai as hemacias de uma imagem RGB , o retorno eh uma imagem preta com apenas as hemacias em branco 
 			parametros
@@ -191,6 +191,25 @@ class Segmentation(object):
 		cv2.waitKey(time)
 
 
+	def pre_segmentation(self):
+		"""
+			faz uma pre segmentacao na imagem , tem como objetivo segmentar pelo menos uma parte do nucleo e do 
+			citoplasma da celula central. A ideia desse metodo eh primeiro deixar a imagem mais homogenea antes
+			de segmentala, o que facilita na diferenciacao das partes que compoem uma imagem (celulas que reagi-
+			ram com o reagente roxo , hemacias e fundo)
+		"""
+		homogenized_image = cv2.pyrMeanShiftFiltering(self.rgb_image, 10, 12)              #deixa a imagem mais homogenia ,tornando mais facil diferenciar os conteudos da imagem (celula central , fundo e hemacias)
+		red_cells = self.get_red_cells(homogenized_image)                                  #pega as hemacias da imagem
+		red_cells_inverted = cv2.bitwise_not(red_cells)                                    #inverte as hemacias da imagem , para que as hemacias fiquem com valor 0 e o resto com valor 255
+		red_cells_free_image = self.apply_rgb_mask(homogenized_image , red_cells_inverted) #aplica a mascara na imagem original , removendo as hemacias
+		gray = cv2.cvtColor(red_cells_free_image , cv2.COLOR_BGR2GRAY)                     #converte a imagem que teve suas hemacias removidas para tons de cinza
+		gray_flooded = FloodBorders(gray).process()                                        #inunda as bordas da imagem em tons de cinza, feito com o proposito de deixar o fundo com valor igual a 0
+		interest_cell = get_interest_cell(gray_flooded , binarization_method = 'BINARY')   #recupera apenas a celula central com valores 255 e os demais valores com o valor 0
+		segmented_image = self.apply_rgb_mask(self.rgb_image , interest_cell)              #aplica essa mascara que na teoria contem apenas a celula central (pelo menos boa parte dela) com a imagem original , removendo o fundo e as hemacias
+		return segmented_image
+
+
+
 ##################################################################################################################
 
 
@@ -219,20 +238,20 @@ class ErythrocytesRemoval(Segmentation):
 
 
 	def process(self , display = False):
-		erythrocytes = self.get_erythrocytes()                      #extrai as hemacias 
-		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)           #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
+		erythrocytes = self.get_red_cells()                              #extrai as hemacias 
+		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)            #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
 		erythrocytes_free = self.apply_rgb_mask(self.rgb_image , erythrocytes_inverted)
 		h , s = ImageChanels(erythrocytes_free).hsv(display = False)[:2] #separa os canais da matiz e da saturacao da imagem livre de hemacias , agora passase a trabalhar com a matiz e a saturacao porque quando uma tem mal resultado o resultado do outro canal normalmente eh bom
-		hue_cell = self.get_interest_cell(h)            #pega a celula central da matiz
-		saturation_cell = self.get_interest_cell(s)     #pega a celula central da saturacao
-		hue_area = self.contour_area(hue_cell)            #calcula a area da celula central presente na matiz
-		saturation_area = self.contour_area(saturation_cell)     #calcula a area da celula central presente na saturacao
-		mask = np.array((0,0))      #criada matriz vazia para ser usada como mascara
-		if hue_area > saturation_area:    # caso a area dos contornos da MATIZ seja maior do que a area dos contornos da SATURACAO a matiz sera usada como mascara
+		hue_cell = self.get_interest_cell(h)                             #pega a celula central da matiz
+		saturation_cell = self.get_interest_cell(s)                      #pega a celula central da saturacao
+		hue_area = self.contour_area(hue_cell)                           #calcula a area da celula central presente na matiz
+		saturation_area = self.contour_area(saturation_cell)             #calcula a area da celula central presente na saturacao
+		mask = np.array((0,0))                                           #criada matriz vazia para ser usada como mascara
+		if hue_area > saturation_area:                                   # caso a area dos contornos da MATIZ seja maior do que a area dos contornos da SATURACAO a matiz sera usada como mascara
 			mask = hue_cell
-		else:                             #caso contrario a SATURACAO eh usada como mascara
+		else:                                                            #caso contrario a SATURACAO eh usada como mascara
 			mask = saturation_cell
-		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)   #aplica a mascara na imagem original , assim segmentando a celula central 
+		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)     #aplica a mascara na imagem original , assim segmentando a celula central 
 		if display:
 			self.display_image(segmented_image)
 		return segmented_image
@@ -293,7 +312,7 @@ class Homogenization(Segmentation):
 		shifted = cv2.pyrMeanShiftFiltering(self.rgb_image, 10, 12) #aplica o filtro MeanShiftFiltering , usado para homogenizar a imagem com o proposito de deixar o fundo com exatamente a mesma tonalidade
 		gray_image = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)      #converte a imagem para tons de cinza
 		flooded_image = FloodBorders(gray_image , value = 0).process()       #inunda as bordas da imagem homogenizada que foi convertida para tons de cinza , isso remove o fundo e as hemacias que estao presentes nas bordas
-		erythrocytes = self.get_erythrocytes()                  #obtem as hemacias da imagem
+		erythrocytes = self.get_red_cells()                  #obtem as hemacias da imagem
 		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)       #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
 		result = self.apply_gray_scale_mask(flooded_image , erythrocytes_inverted)  #multiplica as hemacias com valor 0 e a imagem inundada , com objetivo de remover a maior parte do fundo e das hemacias
 		closing = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)      #aplica abertura para remover pequenos ruidos da imagem resultante da multiplicacao
