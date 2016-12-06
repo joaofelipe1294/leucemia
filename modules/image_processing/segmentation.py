@@ -86,22 +86,6 @@ class Segmentation(object):
 		return clean_interest_cell
 
 
-	def contour_area(self , binary_image):
-		"""
-			calcula a area total dos contornos de uma imagem binaria 
-			parametros
-				@binary_image - imagem binaria , essa imagem deve ser binaria para que os contornos sejam extraidos facilmente 
-		"""
-		contours , contours_image = self.get_contours(binary_image)     #pega os contronos da celula recebida como parametro
-		if len(contours) == 1:                       #verifica se existe mais de um contorno
-			return cv2.contourArea(contours[0])      #caso exista apenas um contorno retorna sua area
-		else:                                        #senao itera sobre todos os contornos do array de contornos somando suas areas
-			total_area = 0                          
-			for contour in contours:                    
-			 	total_area += cv2.contourArea(contour)
-			return total_area
-
-
 	def apply_rgb_mask(self , rgb_image , mask_image):
 		"""
 			aplica uma mascara composta de zeros e uns propria para multiplicar duas imagens , trabalha com imagens RGB (3 canais) , retorna a imagem RGB
@@ -115,17 +99,6 @@ class Segmentation(object):
 		result = rgb_image * mask                                          #multiplica as duas imagens , fazendo com que tudo que estaja com o valor 1 na mascara mantenha seu valor original e o que esta co o valor 0 na mascara suma
 		return result
 
-
-	def apply_gray_scale_mask(self , gray_image , mask_image):
-		"""
-			aplica uma mascara composta por zeros e uns por meio da multiplicacao entre a imagem em tons de cinza e a mascara 
-			parametros 
-				gray_image - imagem em tons de cinza
-				mask_image - imagem composta apenas por 0 e 1 usada como maskara
-		"""
-		ones_mask = cv2.threshold(mask_image,100,1,cv2.THRESH_BINARY)[1] #cria uma mascara com os valores 0 e 1		
-		result = gray_image * ones_mask   #multiplica imagem em tons de cinza pela mascara ,tem como objetivo remover alguma parte especifica da imagem
-		return result
 
 	def get_contours(self , image):
 		""""
@@ -165,6 +138,92 @@ class Segmentation(object):
 		return cell_center , cell_radius , contours
 
 
+	def display_image(self , image , time = 200):
+		"""
+			metodo usado para exibir uma imagem por um determinado tempo
+			parametros
+				@image - imagem que sera exibida
+				@time  - tempo que a imagem sera exibida 
+		"""
+		cv2.imshow('segmented' , image)
+		cv2.waitKey(time)
+
+
+##################################################################################################################
+
+
+##################################################################################################################
+
+
+class ErythrocytesRemoval(Segmentation):
+	"""
+		proposta de segmentacao que primeiramente busca os pelas hemacias para gerar uma mascara , apos 
+		multiplicar a mascara feita a partir das hemacias (o valor dos pixels das hemacias ficam com 
+		valor 0 e os demais com valor 1) e a imagem original as hemacias sao completamente removidas
+		.Depois passase a trabalhar com os canais de matiz (h) e saturacao (s), entao eh aplicado 
+		threshold de Otsu na tentativa de isolar a celula central.Normalmente o resultado do threshold 
+		da saturacao eh apenas o nucleo da celula , em alguns casos a celula eh perdida. Ja o resultado
+		do threshold de Otsu na matiz na maioria das vezes eh a celula como um todo (nucleo e citoplasma) 
+		o que eh considerado um resultado melhor do que apenas o nucleo da celula.Foi observado que quando
+		a filtragem da saturacao tem um resultado ruim a filtragem da matiz tem um bom resultado ,o 
+		contrario tambem eh valido.Apos segmentada a celula central eh extraido seu contorno e varificada 
+		sua area ,para os resultados da matiz e saturacao, a imagem que apresentar uma maior area central
+		eh a escolhida como resultado da segmentacao 
+	"""
+
+
+	def __init__(self , image_path = ''):
+		super(ErythrocytesRemoval , self).__init__(image_path = image_path)
+
+
+	def get_contour_area(self , binary_image):
+		"""
+			calcula a area total dos contornos de uma imagem binaria 
+			parametros
+				@binary_image - imagem binaria , essa imagem deve ser binaria para que os contornos sejam extraidos facilmente 
+		"""
+		contours , contours_image = self.get_contours(binary_image)     #pega os contronos da celula recebida como parametro
+		if len(contours) == 1:                       #verifica se existe mais de um contorno
+			return cv2.contourArea(contours[0])      #caso exista apenas um contorno retorna sua area
+		else:                                        #senao itera sobre todos os contornos do array de contornos somando suas areas
+			total_area = 0                          
+			for contour in contours:                    
+			 	total_area += cv2.contourArea(contour)
+			return total_area
+
+
+	def process(self , display = False):
+		erythrocytes = self.get_red_cells(self.rgb_image)                              #extrai as hemacias 
+		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)            #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
+		erythrocytes_free = self.apply_rgb_mask(self.rgb_image , erythrocytes_inverted)
+		h , s = ImageChanels(erythrocytes_free).hsv(display = False)[:2] #separa os canais da matiz e da saturacao da imagem livre de hemacias , agora passase a trabalhar com a matiz e a saturacao porque quando uma tem mal resultado o resultado do outro canal normalmente eh bom
+		hue_cell = self.get_interest_cell(h)                             #pega a celula central da matiz
+		saturation_cell = self.get_interest_cell(s)                      #pega a celula central da saturacao
+		hue_area = self.get_contour_area(hue_cell)                           #calcula a area da celula central presente na matiz
+		saturation_area = self.get_contour_area(saturation_cell)             #calcula a area da celula central presente na saturacao
+		mask = np.array((0,0))                                           #criada matriz vazia para ser usada como mascara
+		if hue_area > saturation_area:                                   # caso a area dos contornos da MATIZ seja maior do que a area dos contornos da SATURACAO a matiz sera usada como mascara
+			mask = hue_cell
+		else:                                                            #caso contrario a SATURACAO eh usada como mascara
+			mask = saturation_cell
+		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)     #aplica a mascara na imagem original , assim segmentando a celula central 
+		if display:
+			self.display_image(segmented_image)
+		return segmented_image
+
+
+##################################################################################################################
+
+##################################################################################################################
+
+class FirstSegmentation(Segmentation):
+
+
+	def __init__(self , image_path):
+		self.rgb_image = cv2.imread(image_path)
+		super(FirstSegmentation , self).__init__(image_path = image_path)
+
+
 	def remove_noise_objects(self , contours_image , threshold_image , cell_center = None, cell_radius = None , contours = None):
 		"""
 			metodo com o objetivo de remover qualquer objeto da imagem que nao seja a celula de interesse
@@ -174,7 +233,6 @@ class Segmentation(object):
 				@cell_center     - ponto central da celula de interesse
 				@cell_radius     - raio da celula de interesse 
 		"""
-		
 		flooded_image = RegionGrowing(contours_image , seed = cell_center , value = 255).process()      #preenche a celula central 
 		for contour in contours:                                                       #varre todos os contornos e verifica se a celula possui o nucleo vazado , nesse caso ocorre uma excecao que sera corrigida mais pra frente
 			(x,y) , object_radius = cv2.minEnclosingCircle(contour)                    #computa o raio e o ponto central do contorno
@@ -186,16 +244,105 @@ class Segmentation(object):
 		opened_image = cv2.morphologyEx(flooded_image.copy(), cv2.MORPH_OPEN, self.kernel)   #remove os contornos de objetos que nao sejam a celula central
 		return opened_image
 
+	def process(self , display = False):                                      
+		#faz a segmentacao da celula de interece   
+		saturation = ImageChanels(self.rgb_image).hsv('S')                             #extraido canal relativo a Saturacao
+		threshold_image = OtsuThreshold(saturation).process()					       #aplica threshold de OTSU no canal referente a saturacao 
+		flooded_image = FloodBorders(threshold_image).process()                        #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
+		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, self.kernel)    #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
+		contours , contour_image = self.get_contours(flooded_image)                    #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
+		cell_center , cell_radius , contours = self.find_interest_cell(contours)       #computa o ponto central e o raio da celula de interesse 
+		mask = None
+		if len(contours) == 0:                                                         #se o numero de contornos for igual a zero significa que existe apenas um objeto na imagem opened_image logo a mascara ja esta correta
+			mask = opened_image
+		else:
+			mask = self.remove_noise_objects(contour_image , threshold_image , cell_center = cell_center , cell_radius = cell_radius , contours = contours)
+		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)
+		if display:
+			self.display_image(segmented_image)
+		return segmented_image
 
-	def display_image(self , image , time = 200):
+
+##################################################################################################################
+
+##################################################################################################################
+
+
+class Homogenization(Segmentation):
+	"""
+		o diferencial desse metodo de segmentacao eh que ele usa a homogenizacao da imagem RGB a partir da funcao 
+		cv2.pyrMeanShiftFiltering() ,com a imagem mais "comportada" fica mais facil de extrair o fundo da imagem ,
+		isso combinado ao metodo que extrai as hemacias apresentou um resultado satisfatorio ate certo ponto. 11%
+		das imagens tiveram perdas significativas ,2% tiveram perda total e 87% tiveram bins resultados
+	"""
+
+
+
+	def __init__(self , image_path):
+		self.rgb_image = cv2.imread(image_path)
+		super(Homogenization , self).__init__(image_path = image_path)
+
+
+	def apply_gray_scale_mask(self , gray_image , mask_image):
 		"""
-			metodo usado para exibir uma imagem por um determinado tempo
-			parametros
-				@image - imagem que sera exibida
-				@time  - tempo que a imagem sera exibida 
+			aplica uma mascara composta por zeros e uns por meio da multiplicacao entre a imagem em tons de cinza e a mascara 
+			parametros 
+				gray_image - imagem em tons de cinza
+				mask_image - imagem composta apenas por 0 e 1 usada como maskara
 		"""
-		cv2.imshow('segmented' , image)
-		cv2.waitKey(time)
+		ones_mask = cv2.threshold(mask_image,100,1,cv2.THRESH_BINARY)[1] #cria uma mascara com os valores 0 e 1		
+		result = gray_image * ones_mask   #multiplica imagem em tons de cinza pela mascara ,tem como objetivo remover alguma parte especifica da imagem
+		return result
+
+
+	def process(self , display = False):
+		shifted = cv2.pyrMeanShiftFiltering(self.rgb_image, 10, 12)                  #aplica o filtro MeanShiftFiltering , usado para homogenizar a imagem com o proposito de deixar o fundo com exatamente a mesma tonalidade
+		gray_image = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)                       #converte a imagem para tons de cinza
+		flooded_image = FloodBorders(gray_image , value = 0).process()               #inunda as bordas da imagem homogenizada que foi convertida para tons de cinza , isso remove o fundo e as hemacias que estao presentes nas bordas
+		erythrocytes = self.get_red_cells(self.rgb_image)                            #obtem as hemacias da imagem
+		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)                        #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
+		result = self.apply_gray_scale_mask(flooded_image , erythrocytes_inverted)   #multiplica as hemacias com valor 0 e a imagem inundada , com objetivo de remover a maior parte do fundo e das hemacias
+		closing = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)              #aplica abertura para remover pequenos ruidos da imagem resultante da multiplicacao
+		result = self.apply_rgb_mask(self.rgb_image , closing)                       #usa a imagem resultante do fechamento como mascara e a multiplica pela imahem original
+		gray_image = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)                        #converte a imagem RGB (o que restou da remocao das hemacias e do fundo da imagem) para tons de cinza 
+		background_removed = cv2.threshold(gray_image,148,255,cv2.THRESH_BINARY)[1]  #remove o fundo caso ele ainda continue na imagem mesmo apos a aplicacao dos passos anteriores
+		mask = cv2.bitwise_not(background_removed)                                   #inverte o resultado do threshold deixando o fundo em preto e o resto da imagem em branco
+		result = self.apply_gray_scale_mask(gray_image , mask)                       #tem como objetivo remover fundo das imagens em que ele ficou grudado a celula central
+		binary = cv2.threshold(result,10,255,cv2.THRESH_BINARY)[1]                   #binariza a imagem para que seus contornos possam ser extraidos com uma maior precisao
+		contours , contours_image = self.get_contours(binary)
+		cell_center , cell_radius , contours = self.find_interest_cell(contours)              #pega a coordenada do ponto central da celula de interesse (celula que possui seu ponto central mais proximo do ponto central da imagem)
+	 	result = RegionGrowing(contours_image , seed = cell_center ,  value = 255).process()  #aplica crescimento de regioes na celula central , usa o ponto central da celula central como semente
+		opening = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)                       #aplica abertura para remover os contornos dos demais objetos que nao a celula central
+		closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, self.kernel)                     #aplica fechamento para remover os pontos pretos internos da celula central (binarizada)
+		result = self.apply_rgb_mask(self.rgb_image , closing)
+		if display:
+			self.display_image(result)
+		return result
+
+
+##################################################################################################################
+
+##################################################################################################################
+
+
+class SmartSegmentation(Segmentation):
+	"""
+		metodo de segmentacao que utiliza o classificador LDA para classificar os pxs em fundo , hemacia ou celula
+		de interesse. 
+		1. Faz uma pre segmentacao buscando isolar cada uma das partes da celula
+		2. Monta vetores de caracteristicas baseado nos valores de cada um dos canais RGB e HSV de cada px da imagem 
+		3. Treina dois classificadores , um especialista em detectar o fundo (utilizado label 0 para hemacias e 
+		celula central e 1 para o fundo) e outro especialista em detectar hemacias(utilizado label 0 para celula cen-
+		tral e 1 para hemacias)
+		4. Varre a imagem classificando cada px , e montando uma mascara que ira conter os pxs do fundo e das hemcais
+		5 multiplica a mascara invertida pela imagem original, resultando na maioria dos casos em apenas a celula cen-
+		tral e o resto preto
+	"""
+
+
+	def __init__(self , image_path):
+		self.rgb_image = cv2.imread(image_path)
+		super(SmartSegmentation , self).__init__(image_path = image_path)
 
 
 	def pre_segmentation(self):
@@ -214,7 +361,6 @@ class Segmentation(object):
 		interest_cell = self.get_interest_cell(gray_flooded , binarization_method = 'BINARY')   #recupera apenas a celula central com valores 255 e os demais valores com o valor 0
 		segmented_image = self.apply_rgb_mask(self.rgb_image , interest_cell)              #aplica essa mascara que na teoria contem apenas a celula central (pelo menos boa parte dela) com a imagem original , removendo o fundo e as hemacias
 		return segmented_image
-
 
 
 	def mask_builder(self , image , kernel = 30):
@@ -298,156 +444,8 @@ class Segmentation(object):
 		return valid_values , labels
 
 
-##################################################################################################################
-
-
-##################################################################################################################
-
-
-class ErythrocytesRemoval(Segmentation):
-	"""
-		proposta de segmentacao que primeiramente busca os pelas hemacias para gerar uma mascara , apos 
-		multiplicar a mascara feita a partir das hemacias (o valor dos pixels das hemacias ficam com 
-		valor 0 e os demais com valor 1) e a imagem original as hemacias sao completamente removidas
-		.Depois passase a trabalhar com os canais de matiz (h) e saturacao (s), entao eh aplicado 
-		threshold de Otsu na tentativa de isolar a celula central.Normalmente o resultado do threshold 
-		da saturacao eh apenas o nucleo da celula , em alguns casos a celula eh perdida. Ja o resultado
-		do threshold de Otsu na matiz na maioria das vezes eh a celula como um todo (nucleo e citoplasma) 
-		o que eh considerado um resultado melhor do que apenas o nucleo da celula.Foi observado que quando
-		a filtragem da saturacao tem um resultado ruim a filtragem da matiz tem um bom resultado ,o 
-		contrario tambem eh valido.Apos segmentada a celula central eh extraido seu contorno e varificada 
-		sua area ,para os resultados da matiz e saturacao, a imagem que apresentar uma maior area central
-		eh a escolhida como resultado da segmentacao 
-	"""
-
-
-	def __init__(self , image_path = ''):
-		super(ErythrocytesRemoval , self).__init__(image_path = image_path)
-
-
 	def process(self , display = False):
-		erythrocytes = self.get_red_cells(self.rgb_image)                              #extrai as hemacias 
-		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)            #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
-		erythrocytes_free = self.apply_rgb_mask(self.rgb_image , erythrocytes_inverted)
-		h , s = ImageChanels(erythrocytes_free).hsv(display = False)[:2] #separa os canais da matiz e da saturacao da imagem livre de hemacias , agora passase a trabalhar com a matiz e a saturacao porque quando uma tem mal resultado o resultado do outro canal normalmente eh bom
-		hue_cell = self.get_interest_cell(h)                             #pega a celula central da matiz
-		saturation_cell = self.get_interest_cell(s)                      #pega a celula central da saturacao
-		hue_area = self.contour_area(hue_cell)                           #calcula a area da celula central presente na matiz
-		saturation_area = self.contour_area(saturation_cell)             #calcula a area da celula central presente na saturacao
-		mask = np.array((0,0))                                           #criada matriz vazia para ser usada como mascara
-		if hue_area > saturation_area:                                   # caso a area dos contornos da MATIZ seja maior do que a area dos contornos da SATURACAO a matiz sera usada como mascara
-			mask = hue_cell
-		else:                                                            #caso contrario a SATURACAO eh usada como mascara
-			mask = saturation_cell
-		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)     #aplica a mascara na imagem original , assim segmentando a celula central 
-		if display:
-			self.display_image(segmented_image)
-		return segmented_image
-
-
-##################################################################################################################
-
-##################################################################################################################
-
-class FirstSegmentation(Segmentation):
-
-
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(FirstSegmentation , self).__init__(image_path = image_path)
-
-
-	def process(self , display = False):                                      
-		#faz a segmentacao da celula de interece   
-		saturation = ImageChanels(self.rgb_image).hsv('S')                             #extraido canal relativo a Saturacao
-		threshold_image = OtsuThreshold(saturation).process()					       #aplica threshold de OTSU no canal referente a saturacao 
-		flooded_image = FloodBorders(threshold_image).process()                        #aplica o filtro flood_fill com o objetivo de remover os objetos colados as extremidades
-		opened_image = cv2.morphologyEx(flooded_image, cv2.MORPH_OPEN, self.kernel)    #aplica operacao morfologica de abertura para remover pequenos pontos brancos (ruidos) presentes na imagem resultante da operacao anterior 
-		contours , contour_image = self.get_contours(flooded_image)                    #computa uma imagem com os contornos desenhados e uma lista com aas coordenadas dos contornos 
-		cell_center , cell_radius , contours = self.find_interest_cell(contours)       #computa o ponto central e o raio da celula de interesse 
-		mask = None
-		if len(contours) == 0:                                                         #se o numero de contornos for igual a zero significa que existe apenas um objeto na imagem opened_image logo a mascara ja esta correta
-			mask = opened_image
-		else:
-			mask = self.remove_noise_objects(contour_image , threshold_image , cell_center = cell_center , cell_radius = cell_radius , contours = contours)
-		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)
-		if display:
-			self.display_image(segmented_image)
-		return segmented_image
-
-
-##################################################################################################################
-
-##################################################################################################################
-
-
-class Homogenization(Segmentation):
-	"""
-		o diferencial desse metodo de segmentacao eh que ele usa a homogenizacao da imagem RGB a partir da funcao 
-		cv2.pyrMeanShiftFiltering() ,com a imagem mais "comportada" fica mais facil de extrair o fundo da imagem ,
-		isso combinado ao metodo que extrai as hemacias apresentou um resultado satisfatorio ate certo ponto. 11%
-		das imagens tiveram perdas significativas ,2% tiveram perda total e 87% tiveram bins resultados
-	"""
-
-
-
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(Homogenization , self).__init__(image_path = image_path)
-
-
-	def process(self , display = False):
-		shifted = cv2.pyrMeanShiftFiltering(self.rgb_image, 10, 12) #aplica o filtro MeanShiftFiltering , usado para homogenizar a imagem com o proposito de deixar o fundo com exatamente a mesma tonalidade
-		gray_image = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)      #converte a imagem para tons de cinza
-		flooded_image = FloodBorders(gray_image , value = 0).process()       #inunda as bordas da imagem homogenizada que foi convertida para tons de cinza , isso remove o fundo e as hemacias que estao presentes nas bordas
-		erythrocytes = self.get_red_cells(self.rgb_image)                  #obtem as hemacias da imagem
-		erythrocytes_inverted = cv2.bitwise_not(erythrocytes)       #invertea imagem para as hemacias para que as hemacias fiquem em preto e o fundo branco
-		result = self.apply_gray_scale_mask(flooded_image , erythrocytes_inverted)  #multiplica as hemacias com valor 0 e a imagem inundada , com objetivo de remover a maior parte do fundo e das hemacias
-		closing = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)      #aplica abertura para remover pequenos ruidos da imagem resultante da multiplicacao
-		result = self.apply_rgb_mask(self.rgb_image , closing)               #usa a imagem resultante do fechamento como mascara e a multiplica pela imahem original
-		gray_image = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)                #converte a imagem RGB (o que restou da remocao das hemacias e do fundo da imagem) para tons de cinza 
-		background_removed = cv2.threshold(gray_image,148,255,cv2.THRESH_BINARY)[1]   #remove o fundo caso ele ainda continue na imagem mesmo apos a aplicacao dos passos anteriores
-		mask = cv2.bitwise_not(background_removed)                                    #inverte o resultado do threshold deixando o fundo em preto e o resto da imagem em branco
-		result = self.apply_gray_scale_mask(gray_image , mask)               #tem como objetivo remover fundo das imagens em que ele ficou grudado a celula central
-		binary = cv2.threshold(result,10,255,cv2.THRESH_BINARY)[1]           #binariza a imagem para que seus contornos possam ser extraidos com uma maior precisao
-		contours , contours_image = self.get_contours(binary)
-		cell_center , cell_radius , contours = self.find_interest_cell(contours)        #pega a coordenada do ponto central da celula de interesse (celula que possui seu ponto central mais proximo do ponto central da imagem)
-	 	result = RegionGrowing(contours_image , seed = cell_center ,  value = 255).process()   #aplica crescimento de regioes na celula central , usa o ponto central da celula central como semente
-		opening = cv2.morphologyEx(result, cv2.MORPH_OPEN, self.kernel)           #aplica abertura para remover os contornos dos demais objetos que nao a celula central
-		closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, self.kernel)         #aplica fechamento para remover os pontos pretos internos da celula central (binarizada)
-		result = self.apply_rgb_mask(self.rgb_image , closing)
-		if display:
-			self.display_image(result)
-		return result
-
-
-##################################################################################################################
-
-##################################################################################################################
-
-
-class SmartSegmentation(Segmentation):
-	"""
-		metodo de segmentacao que utiliza o classificador LDA para classificar os pxs em fundo , hemacia ou celula
-		de interesse. 
-		1. Faz uma pre segmentacao buscando isolar cada uma das partes da celula
-		2. Monta vetores de caracteristicas baseado nos valores de cada um dos canais RGB e HSV de cada px da imagem 
-		3. Treina dois classificadores , um especialista em detectar o fundo (utilizado label 0 para hemacias e 
-		celula central e 1 para o fundo) e outro especialista em detectar hemacias(utilizado label 0 para celula cen-
-		tral e 1 para hemacias)
-		4. Varre a imagem classificando cada px , e montando uma mascara que ira conter os pxs do fundo e das hemcais
-		5 multiplica a mascara invertida pela imagem original, resultando na maioria dos casos em apenas a celula cen-
-		tral e o resto preto
-	"""
-
-
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(SmartSegmentation , self).__init__(image_path = image_path)
-
-
-	def process(self , display = False):
-		#print('\rExtraindo valores dos pxs ...')
+		#print('Extraindo valores dos pxs ...')
 		pre_segmented = self.pre_segmentation()                                                #pega imagem que contem apenas parte da celula central
 		red_cells = self.get_red_cells_pxs()                                                   #pega imagem que contem apenas parte da hemacias
 		background = self.get_background_pxs()                                                 #pega imagem que contem apenas parte do fundo
