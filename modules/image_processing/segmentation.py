@@ -25,17 +25,15 @@ class Segmentation(object):
 	__metaclass__ = ABCMeta  #usado para tornas a classe filter abstrata
 
 	
-	def __init__(self , image_path = ''):
+	def __init__(self , rgb_image):
 		"""
 			parametros
-				@image_path - string que contem o caminho da imagem que sera segmentada
+				@rgb_image - imagem que sera segmentada
 			atributos
-				@image_path - string que contem o caminho da imagem que sera segmentada
 				@rgb_image  - imagem rgb lida a partir do caminho informado 
 				@kernel     - elemento estrututante usado nas operacoes de morfologia matematica , elemento com formato de elipse 5x5
 		"""
-		self.image_path = image_path
-		self.rgb_image = cv2.imread(self.image_path)
+		self.rgb_image = rgb_image
 		self.kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5))   #kernel circular usado para operacao de abertura     
 
 
@@ -172,8 +170,8 @@ class ErythrocytesRemoval(Segmentation):
 	"""
 
 
-	def __init__(self , image_path = ''):
-		super(ErythrocytesRemoval , self).__init__(image_path = image_path)
+	def __init__(self , rgb_image):
+		super(ErythrocytesRemoval , self).__init__(rgb_image = rgb_image)
 
 
 	def get_contour_area(self , binary_image):
@@ -219,9 +217,9 @@ class ErythrocytesRemoval(Segmentation):
 class FirstSegmentation(Segmentation):
 
 
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(FirstSegmentation , self).__init__(image_path = image_path)
+	def __init__(self , rgb_image):
+		self.rgb_image = cv2.imread(rgb_image)
+		super(FirstSegmentation , self).__init__(rgb_image = rgb_image)
 
 
 	def remove_noise_objects(self , contours_image , threshold_image , cell_center = None, cell_radius = None , contours = None):
@@ -278,9 +276,9 @@ class Homogenization(Segmentation):
 
 
 
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(Homogenization , self).__init__(image_path = image_path)
+	def __init__(self , rgb_image):
+		self.rgb_image = cv2.imread(rgb_image)
+		super(Homogenization , self).__init__(rgb_image = rgb_image)
 
 
 	def apply_gray_scale_mask(self , gray_image , mask_image):
@@ -340,9 +338,8 @@ class SmartSegmentation(Segmentation):
 	"""
 
 
-	def __init__(self , image_path):
-		self.rgb_image = cv2.imread(image_path)
-		super(SmartSegmentation , self).__init__(image_path = image_path)
+	def __init__(self , rgb_image):
+		super(SmartSegmentation , self).__init__(rgb_image = rgb_image)
 
 
 	def pre_segmentation(self):
@@ -490,6 +487,45 @@ class SmartSegmentation(Segmentation):
 		inverted_closing = cv2.bitwise_not(closing)                            #inverte a imagem resultate do fechamento para que a celula central fique branca e o resto em preto
 		mask = self.get_interest_cell(inverted_closing)                             #recupera apenas a celula central da imagem , remove os demais elementos presentes na imagem 
 		segmented_image = self.apply_rgb_mask(self.rgb_image , mask)
+		if display:
+			self.display_image(segmented_image)
+		return segmented_image
+
+
+##################################################################################################################
+
+##################################################################################################################
+
+class SegmentNucleus(Segmentation):
+
+	def __init__(self , rgb_image):
+		super(SegmentNucleus , self).__init__(rgb_image = rgb_image)
+
+
+	def process(self , display = False):
+		s = ImageChanels(self.rgb_image).hsv(chanel = 'S' , display = False) #pega o canal referente a saturacao da imagem 
+		for x in xrange(0,s.shape[0]):  #loop que deixa os pxs com valor 0 iguais a 127 para que o threshold de OTSU tenha um melhor resultado
+			for y in xrange(0,s.shape[1]):
+				if s.item(x,y) == 0:
+					s.itemset(x,y,127)
+		otsu = OtsuThreshold(s).process() #aplica o threshold de otsu na imagem referente a saturacao 'normalizada'
+		erosion = cv2.erode(otsu , cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4,4)) ,iterations = 1)	#aplica morfologia do tipo erosao para fechar os contornos das celulas
+		white = 0
+		black = 0
+		for x in xrange(0,otsu.shape[0]):  #verifica se a imagem ficou invertida
+			for y in xrange(0,otsu.shape[1]):
+				if otsu.item(x,y) == 255:
+					white += 1
+				else:
+					black += 1
+		if white > black:
+			otsu = FloodBorders(erosion).process()
+		segmented_image = FloodBorders(otsu).process() #inunda as bordas da imagem para remover celulas com alto gral de saturacao mas que nao sao a celula de interece
+		#contours_image , contours, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) #metodo usado para recuperar os contornos de uma imagem binaria
+	 	#contours_area = 0
+	 	#for contour in contours:
+	 	#	contours_area = cv2.contourArea(contour)
+	 	#return contours , contours_area
 		if display:
 			self.display_image(segmented_image)
 		return segmented_image

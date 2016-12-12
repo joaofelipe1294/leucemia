@@ -33,7 +33,7 @@ class BaseLoader(object):
 		for path in paths:
 			image_id = path[2:5]
 			image_path = base_path + '/' + path
-			label = path[len(path) - 5:len(path) - 4]
+			label = path[6] #5,4
 			image = Image(image_id = image_id , path = image_path , label = label)
 			images.append(image)
 		print("Imagens carregadas")
