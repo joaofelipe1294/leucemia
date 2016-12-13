@@ -7,28 +7,8 @@ from modules.image_processing.image_chanels import ImageChanels
 from modules.image_processing.filters import *
 from modules.features.features import Features
 from modules.image_processing.segmentation import SegmentNucleus
+from modules.features.features import MinMax
 
-
-
-def min_max(values , minimum = 0, maximum = 1):
-	values = [[float(j) for j in column] for column in values] #converto os valores para float
-	values = np.array(values)
-	normalized_values = np.zeros((values.shape[0] , values.shape[1] - 1))
-	for column in xrange(0,values.shape[1] - 1) :
-		column_values = values[:,column]
-		bigger = max(column_values) #pega o maior valor da coluna
-		lower = min(column_values)  #pega o menor valor da coluna
-		line = 0
-		for value in column_values:
-			normalized_value = 0
-			if value != 0:
-				normalized_value = minimum + ((value - lower) / (bigger - lower)) * (maximum - minimum)
-				normalized_values.itemset(line , column , normalized_value)
-			line += 1
-	labels = values[:,values.shape[1] - 1]
-	labels = [[label] for label in labels]
-	normalized_values = np.append(normalized_values , np.array(labels) , axis=1)
-	return normalized_values
 
 
 #treinamento
@@ -49,7 +29,7 @@ for image in base.train_images:
 	data.append([mean , median , standard_deviation , cell_proportion , image.label])
 	ProgressBar().printProgress(iteration , len(base.train_images) , prefix = "Treinamento : ")
 	iteration += 1
-normalized_data = min_max(data , maximum = 10)
+normalized_data = MinMax(data).normalize(maximum = 10) #min_max(data , maximum = 10)
 for value in normalized_data:
 	#file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + '\n')
 	file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
@@ -71,7 +51,7 @@ for image in base.validation_images:
 	data.append([mean , median , standard_deviation , cell_proportion,  image.label])
 	ProgressBar().printProgress(iteration , len(base.train_images) , prefix = "Validacao : ")
 	iteration += 1
-normalized_data = min_max(data , maximum = 10)
+normalized_data = MinMax(data).normalize(maximum = 10) #min_max(data , maximum = 10)
 for value in normalized_data:
 	#file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + '\n')
 	file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
