@@ -9,9 +9,9 @@ from modules.base.kfold import Kfold
 #base = BaseLoader(train_base_path =  kfolds.train_path,  validation_base_path = kfolds.validation_path)
 base = BaseLoader(train_base_path = 'bases/ALL_IDB2/img' ,  validation_base_path = 'bases/Teste_ALL_IDB2/ALL')
 base.load()
-BaseProcessor().load(images = base.train_images , train = True)
-print()
-BaseProcessor().load(images = base.validation_images , validation = True)
+#BaseProcessor().load(images = base.train_images , train = True)
+#print()
+#BaseProcessor().load(images = base.validation_images , validation = True)
 
 
 #X = base.train_vectors
