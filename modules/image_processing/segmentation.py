@@ -521,11 +521,6 @@ class SegmentNucleus(Segmentation):
 		if white > black:
 			otsu = FloodBorders(erosion).process()
 		segmented_image = FloodBorders(otsu).process() #inunda as bordas da imagem para remover celulas com alto gral de saturacao mas que nao sao a celula de interece
-		#contours_image , contours, hierarchy = cv2.findContours(otsu.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) #metodo usado para recuperar os contornos de uma imagem binaria
-	 	#contours_area = 0
-	 	#for contour in contours:
-	 	#	contours_area = cv2.contourArea(contour)
-	 	#return contours , contours_area
 		if display:
 			self.display_image(segmented_image)
 		return segmented_image

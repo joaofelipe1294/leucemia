@@ -44,7 +44,7 @@ def read_values(file_path):
 
 base_path = 'bases/k_fold'
 folds = [f for f in sorted(os.listdir(base_path))]
-'''
+
 for fold in folds:
 	base = BaseLoader(train_base_path = base_path + '/' + fold ,  validation_base_path = 'bases/teste/validacao')
 	base.load()
@@ -53,11 +53,13 @@ for fold in folds:
 	data = []
 	for image in base.train_images:
 		mean , median , standard_deviation , cell_proportion = extrcat_features(image.path)
-		data.append([mean , median , standard_deviation , cell_proportion , image.label])
+		#data.append([mean , median , standard_deviation , cell_proportion , image.label])
+		data.append([mean , cell_proportion , image.label])
 		ProgressBar().printProgress(iteration , len(base.train_images) , prefix = fold + " : ")
 		iteration += 1
 	for value in data:
-		file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
+		#file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
+		file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + '\n')
 	file.close()
 
 #recupera os dados de cada fold , concatenaos e os normaliza
@@ -79,13 +81,14 @@ while fold_index < len(folds):
 	file = open( folds[fold_index] + '.csv', 'w')
 	while start_index < stop_index:
 		value = normalized_data[start_index]
-		file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
+		#file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + ',' + str(value[3]) + ',' + str(value[4]) + '\n')
+		file.write(str(value[0]) + ',' + str(value[1]) + ',' + str(value[2]) + '\n')
 		start_index += 1
 	file.close()
 	fold_index += 1
 
 #print(len(data))
-'''
+
 
 
 ####################################################################################################

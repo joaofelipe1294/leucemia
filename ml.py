@@ -7,7 +7,6 @@ def read_values(file_path):
 	X = []
 	y = []
 	for line in file:
-		#line = line.replace('\n' , '')
 		values = line.split(',')
 		atributes = values[:len(values) - 1]
 		atributes = [float(f) for f in atributes]
@@ -22,7 +21,7 @@ valid_file_path = 'validacao.csv'
 X_train , y_train = read_values(train_file_path)
 X_valid , y_valid = read_values(valid_file_path)
 
-#classifier = KNeighborsClassifier(n_neighbors = 3)
+
 classifier = SVC(kernel="linear" , C = 0.025 , probability = True)
 classifier.fit(X_train , y_train)
 labels = classifier.predict(X_valid)
