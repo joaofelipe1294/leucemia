@@ -94,6 +94,90 @@ class Fold(object):
 
 
 class KFold(object):
+	#classe que automatiza a criacao de uma distribuicao de amostras do tipo kfold
 
-	def __init__(self , k = 2 , base_path):
-		
+	def __init__(self , base_path , k = 2):
+		self.k = k
+		self.base_path = base_path
+
+
+	def process(self):
+		all_images = self.load_base()
+		positives , negatives = self.divide_positives_and_negatives(all_images)
+		for image in negatives:
+			print(image.path)
+		print(len(negatives))
+
+
+	def load_base(self):
+		#metodo que le todas as imagens da base e retorna uma lista com essas imagens ja carregadas
+		print("Carregando imagens de " + self.base_path + " ...")
+		paths = os.listdir(self.base_path)
+		paths.sort()
+		images = []
+		for path in paths:
+			image_id = path[2:5]
+			image_path = self.base_path + '/' + path
+			label = path[6] #5,4
+			image = Image(image_id = image_id , path = image_path , label = label)
+			images.append(image)
+		print("Imagens carregadas")
+		return images
+
+
+	def divide_positives_and_negatives(self , images):
+		positives = []
+		negatives = []
+		for image in images:
+			if image.label == 1:
+				positives.append(image)
+			else:
+				negatives.append(image)
+		return positives , negatives
+
+
+
+
+'''
+class BaseLoader(object):
+
+
+	def __init__(self , train_base_path = None , validation_base_path = None):
+		self.train_base_path = train_base_path
+		self.train_images = []
+		self.train_labels = []
+		self.validation_base_path = validation_base_path
+		self.validation_images = []
+		self.validation_labels = []
+
+
+	def load(self):
+		self.train_images = self.load_base_images(self.train_base_path)
+		self.validation_images = self.load_base_images(self.validation_base_path)
+		self.train_labels = self.get_labels(self.train_images)
+		self.validation_labels = self.get_labels(self.validation_images)
+
+
+	def load_base_images(self , base_path):
+		print("Carregando imagens de " + base_path + " ...")
+		paths = os.listdir(base_path)
+		paths.sort()
+		images = []
+		for path in paths:
+			image_id = path[2:5]
+			image_path = base_path + '/' + path
+			label = path[6] #5,4
+			image = Image(image_id = image_id , path = image_path , label = label)
+			images.append(image)
+		print("Imagens carregadas")
+		return images
+
+
+	def get_labels(self , images):
+		labels = []
+		for image in images:
+			labels.append(image.label)
+		return labels
+
+
+'''
