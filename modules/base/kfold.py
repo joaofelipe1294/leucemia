@@ -79,20 +79,6 @@ class Kfold(object):
 		shutil.rmtree(self.validation_path)
 
 
-class Fold(object):
-	#classe que abstrai um diretorio usado no algoritmo de kfold , eh uma classe anemica
-
-	def __init__(self , path , images):
-		'''
-			@parameters 
-				path - caminho do diretorio
-				images - lista com todas as imagens ja carregadas em memoria desse diretorio
-		'''
-		self.path = path
-		self.images = images
-
-
-
 class KFold(object):
 	#classe que automatiza a criacao de uma distribuicao de amostras do tipo kfold
 
@@ -101,12 +87,17 @@ class KFold(object):
 		self.base_path = base_path
 
 
-	def process(self):
+	def pipeline(self):
 		all_images = self.load_base()
 		positives , negatives = self.divide_positives_and_negatives(all_images)
-		for image in negatives:
-			print(image.path)
-		print(len(negatives))
+		kfolds = self.devide_in_folds(positives , negatives)
+		try:
+			self.remove_directories()	
+			self.build_directories()
+		except Exception as e:
+			self.build_directories()
+		self.move_image_to_fold(kfolds)
+		
 
 
 	def load_base(self):
@@ -126,6 +117,7 @@ class KFold(object):
 
 
 	def divide_positives_and_negatives(self , images):
+		#metodo que divide uma lista de Image em duas, aonde o criterio de divisao eh a label da imagem
 		positives = []
 		negatives = []
 		for image in images:
@@ -136,48 +128,37 @@ class KFold(object):
 		return positives , negatives
 
 
+	def devide_in_folds(self , positive_images , negative_images):
+		#metodo que distribui as imagens em listas relativas aos folds
+		kfolds = []
+		number_of_images_per_fold = ((len(positive_images) + len(negative_images)) / self.k) / 2
+		start_index = 0
+		stop_index = number_of_images_per_fold
+		for cont in xrange(0,self.k):
+			fold_images = []
+			for image_index in xrange(start_index,stop_index):
+				fold_images.append(positive_images[image_index])
+				fold_images.append(negative_images[image_index])
+			kfolds.append(fold_images)
+			start_index += number_of_images_per_fold
+			stop_index += number_of_images_per_fold
+		return kfolds
 
 
-'''
-class BaseLoader(object):
+	def build_directories(self):
+		#metodo que cria os diretorios temporarios que irao armazenar as imagens de treino e validacao
+		os.makedirs('bases/kfolds')
+		for x in xrange(1 , self.k + 1):
+			os.makedirs('bases/kfolds/' + str(x) + 'fold')
 
+	def remove_directories(self):
+		shutil.rmtree('bases/kfolds')
 
-	def __init__(self , train_base_path = None , validation_base_path = None):
-		self.train_base_path = train_base_path
-		self.train_images = []
-		self.train_labels = []
-		self.validation_base_path = validation_base_path
-		self.validation_images = []
-		self.validation_labels = []
-
-
-	def load(self):
-		self.train_images = self.load_base_images(self.train_base_path)
-		self.validation_images = self.load_base_images(self.validation_base_path)
-		self.train_labels = self.get_labels(self.train_images)
-		self.validation_labels = self.get_labels(self.validation_images)
-
-
-	def load_base_images(self , base_path):
-		print("Carregando imagens de " + base_path + " ...")
-		paths = os.listdir(base_path)
-		paths.sort()
-		images = []
-		for path in paths:
-			image_id = path[2:5]
-			image_path = base_path + '/' + path
-			label = path[6] #5,4
-			image = Image(image_id = image_id , path = image_path , label = label)
-			images.append(image)
-		print("Imagens carregadas")
-		return images
-
-
-	def get_labels(self , images):
-		labels = []
-		for image in images:
-			labels.append(image.label)
-		return labels
-
-
-'''
+	def move_image_to_fold(self , kfolds):
+		k_index = 0
+		print(kfolds)
+		for images in kfolds:
+			k_index += 1
+			for image in images:
+				#print(image.path[10:])
+				shutil.copy(image.path , 'bases/kfolds/' + str(k_index) + 'fold/' + image.path[11:])
