@@ -77,3 +77,23 @@ class Kfold(object):
 	def remove_temp_dirs(self):
 		shutil.rmtree(self.train_path)
 		shutil.rmtree(self.validation_path)
+
+
+class Fold(object):
+	#classe que abstrai um diretorio usado no algoritmo de kfold , eh uma classe anemica
+
+	def __init__(self , path , images):
+		'''
+			@parameters 
+				path - caminho do diretorio
+				images - lista com todas as imagens ja carregadas em memoria desse diretorio
+		'''
+		self.path = path
+		self.images = images
+
+
+
+class KFold(object):
+
+	def __init__(self , k = 2 , base_path):
+		
